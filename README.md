@@ -8,3 +8,9 @@ Contributors:
 - Donggyun Park
 - Fynn van Westen
 
+## Setup
+- This repo uses `poetry` for Python environment management, so you're advised to have poetry setup properly. You can create the env and install all required packages using
+```
+poetry install
+```
+- If you don't want to use poetry, you can simply install the dependencies on your computer from the `requirements.txt` file

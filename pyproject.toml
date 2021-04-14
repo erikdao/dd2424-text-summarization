@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "dd2424-text-summarization"
+version = "0.1.0"
+description = "Course Project for DD2424"
+authors = ["erikdao <cuong@neuraltalks.io>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+torch = "^1.8.1"
+pytorch-lightning = "^1.2.7"
+numpy = "^1.20.2"
+pandas = "^1.2.4"
+matplotlib = "^3.4.1"
+seaborn = "^0.11.1"
+
+[tool.poetry.dev-dependencies]
+flake8 = "^3.9.0"
+black = "^20.8b1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
