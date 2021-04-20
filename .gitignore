@@ -106,4 +106,5 @@ ENV/
 
 # other
 .vscode
-data/
+data/amazon-product-reviews
+
