@@ -9,6 +9,7 @@ import spacy
 import numpy as np
 import pickle
 from preprocess.glove import *
+from utils.pickle import *
 
 CSV_FILE = '../data/amazon-product-reviews/Reviews.csv'
 EMBEDDING_FILE = './glove.6B.50d.txt'
@@ -64,15 +65,6 @@ def tokenize_data(inputs, labels, word2index):
 
     return mappings, n_valid_points
 
-def pickle_save(filename, data):
-    "Save data python object to a pickle file"
-    with open(filename, 'wb') as handle:
-        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-def pickle_load(filename):
-    "Load python object from a pickle file"
-    with open(filename, 'rb') as handle:
-        return pickle.load(handle)
 
 def main():
     print("Loading data...")
