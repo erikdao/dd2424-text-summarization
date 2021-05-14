@@ -4,12 +4,15 @@ A custom Pytorch Dataloader for the CSV Review data
 import os
 import typing
 import pandas as pd
+from operator import itemgetter
 
 import torch
 import torch.nn as nn
 from torch.utils import data as data_utils
 from torchvision import transforms, utils
 from transformers import DistilBertConfig, DistilBertTokenizer, DistilBertModel
+
+from utils.pickle import *
 
 # Max length of sequence, this is a setting for encode_plus of DistilBertTokenizer
 # (or more specifically, transformers.tokenization_utils_base.PreTrainedTokenizerBase.encode_plus)
@@ -101,22 +104,43 @@ class ReviewDataset(data_utils.Dataset):
     """
     Class to present the Review Dataset
     """
-    def __init__(self, csv_file=None, transform=None):
-        self.data = pd.read_csv(csv_file)
+    def __init__(self, csv_file=None, transform=None, w2i=None, mappings=None):
+        if csv_file != None
+            self.csv_file = csv_file
+            self.data = pd.read_csv(csv_file)
+        else:
+            self.csv_file = None
+            self.w2i = w2i
+            self.mappings = mappings
+            inputs = mappings['inputs']
+            labels = mappings['labels']
+            inputs_idxs = [[toktup[1] for toktup in in_sentence] for in_sentence in inputs]    
+            label_idxs = [[toktup[1] for toktup in in_sentence] for in_sentence in labels]    
+            self.data = {"inputs": inputs_idxs, "labels": label_idxs}
         self.transform = transform
 
     def __len__(self):
-        return len(self.data)
+        if self.csv_file == None:
+            return len(self.data['inputs'])
+        else:
+            return len(self.data)
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         
-        record = self.data.iloc[idx]
+        if self.csv_file == None
+            inputs = itemgetter(*idx)(self.data['inputs'])
+            inputs = torch.IntTensor(inputs)
+            labels = itemgetter(*idx)(self.data['labels'])
+            labels = torch.IntTensor(labels)
+            sample = {'input': inputs, 'label': labels}
+        else:
+            record = self.data.iloc[idx]
 
-        # Construct a sample from the row in the dataframe.the `input` refers to
-        # the `text`, while the `label` refers to the `summary` attribute
-        sample = {'input': record['Text'], 'label': record['Summary']}
+            # Construct a sample from the row in the dataframe.the `input` refers to
+            # the `text`, while the `label` refers to the `summary` attribute
+            sample = {'input': record['Text'], 'label': record['Summary']}
 
         if self.transform:
             sample = self.transform(sample)
@@ -130,7 +154,7 @@ def create_dataloader(
     shuffle: typing.Optional[bool] = True,
 ):
     """
-    Create data loader
+    Create data loader from CSV file
     """
     dataset = ReviewDataset(csv_file=csv_file, transform=DistillBERTEncodeTransform())
     loader = data_utils.DataLoader(
@@ -139,17 +163,23 @@ def create_dataloader(
 
     return loader
 
-def create_dataloader_notransform(
-    csv_file: typing.Optional[str] = None,
+def create_dataloader_glove(
     batch_size: typing.Optional[int] = 16,
     shuffle: typing.Optional[bool] = True,
 ):
     """
-    Create data loader
+    Create data loader with glove embeddings
     """
-    dataset = ReviewDataset(csv_file=csv_file, transform=None)
+
+    input_dir = "./tokenized"
+    mappings_pickle = input_dir + "/tokenized"
+    mappings = pickle_load(mappings_pickle)
+    word2index_pickle = input_dir + "/word2index"
+    word2index = pickle_load(word2index_pickle)
+    dataset = ReviewDataset(transform=None, w2i = word2index, mappings=mappings)
     loader = data_utils.DataLoader(
         dataset, batch_size=batch_size, shuffle=shuffle
     )
 
     return loader
+    
