@@ -72,6 +72,30 @@ class DistillBERTEncodeTransform(object):
 
             return {'input': input_embedded, 'label': label_embedded}
 
+class TokenizeTransform(object):
+    """
+    This transform ops convert the original string into IDs via tokenizer
+    returns dictionary with where:
+    'input': input ids
+    'input_mask': input attention mask
+    'label': label ids
+    """
+    def __call__(self, sample):
+        input, label = sample['input'], sample['label']
+        input_ids, input_attn_mask = tokenize(input)
+        label_ids, label_attn_mask = tokenize(label)
+        return {'input': input_embedded, 'label': label_embedded}
+
+        with torch.no_grad():
+            x = input_ids.reshape(1, len(input_ids))
+            y = label_ids.reshape(1, len(label_ids))
+
+            input_embedded = distillBertSequenceModel.forward(input_ids=x, attention_mask=input_attn_mask)
+            label_embedded = distillBertSequenceModel.forward(input_ids=y, attention_mask=label_attn_mask)
+
+            return {'input': input_embedded, 'label': label_embedded}
+
+
 
 class ReviewDataset(data_utils.Dataset):
     """
@@ -103,12 +127,27 @@ class ReviewDataset(data_utils.Dataset):
 def create_dataloader(
     csv_file: typing.Optional[str] = None,
     batch_size: typing.Optional[int] = 16,
-    shuffle: typing.Optional[bool] = True
+    shuffle: typing.Optional[bool] = True,
 ):
     """
     Create data loader
     """
     dataset = ReviewDataset(csv_file=csv_file, transform=DistillBERTEncodeTransform())
+    loader = data_utils.DataLoader(
+        dataset, batch_size=batch_size, shuffle=shuffle
+    )
+
+    return loader
+
+def create_dataloader_notransform(
+    csv_file: typing.Optional[str] = None,
+    batch_size: typing.Optional[int] = 16,
+    shuffle: typing.Optional[bool] = True,
+):
+    """
+    Create data loader
+    """
+    dataset = ReviewDataset(csv_file=csv_file, transform=None)
     loader = data_utils.DataLoader(
         dataset, batch_size=batch_size, shuffle=shuffle
     )
