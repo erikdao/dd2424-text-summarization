@@ -8,7 +8,6 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from torch.utils import data as data_utils
-from torchvision import transforms, utils
 from transformers import DistilBertConfig, DistilBertTokenizer, DistilBertModel
 
 # Max length of sequence, this is a setting for encode_plus of DistilBertTokenizer
@@ -47,7 +46,9 @@ class DistilBertSequence(nn.Module):
         distilbert_output = self.distilbert(input_ids=input_ids,
                                             attention_mask=attention_mask)
         hidden_state = distilbert_output[0]                    
-        pooled_output = hidden_state[:, 0]  
+        print('hidden_state', hidden_state.shape)
+        pooled_output = hidden_state[:, 0]
+        print('pooled_output', pooled_output.shape)
         return pooled_output
 
 distillBertSequenceModel = DistilBertSequence(DistilBertConfig())

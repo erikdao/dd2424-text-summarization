@@ -2,24 +2,36 @@
 Main entrance for training LSTM for text summary generation
 - The word embedding used is DistillBert
 """
+import torch
+
+from lstm.logger import logger
 from lstm.model import LSTMGenerator
-from lstm.dataloader import create_dataloader
+from lstm.dataloader import create_dataloader, tokenizer
+
 
 def main():
-    model = LSTMGenerator()
-    print(model)
-
+    logger.info("Loading training data...")
     train_loader = create_dataloader(
         csv_file='data/amazon-product-reviews/Reviews.csv',
+        batch_size=1,
         shuffle=True
     )
-    for idx, data in enumerate(train_loader):
-        if idx == 2:
-            input_vec = data['input']
-            label_vec = data['label']
-            print(input_vec, input_vec.shape)
-            print(label_vec, label_vec.shape)
-            break
+
+    logger.info("Initialize model...")
+    model = LSTMGenerator(input_size=768)
+    for datapoint in train_loader:
+        input = datapoint['input']
+        print('input', input.shape)
+        label = datapoint['label']
+        hidden = model.init_hidden()
+        for idx in range(input.shape[-1]):
+            output, hidden = model.forward(torch.tensor(input[0, 0, idx]), hidden)
+
+            predicted_index = torch.argmax(output[0, :]).item()
+            predicted_text = tokenizer.decode(predicted_index)
+            print(idx, predicted_text)
+        
+        break
 
 if __name__ == '__main__':
     main()
