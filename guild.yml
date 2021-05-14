@@ -1,0 +1,17 @@
+- model: reviews
+  sourcecode:
+    - "*.py"
+    - "*.h5"
+  operations:
+    tokenize-data:
+      main: preprocess.tokenize_data
+      flags-import: all
+  resources:
+    tokenized:
+      path: tokenized 
+      sources:
+        - operation: tokenize-data 
+    word2index:
+      path: word2index 
+      sources:
+        - operation: tokenize-data 
