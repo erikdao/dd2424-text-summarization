@@ -3,6 +3,12 @@
     - "*.py"
     - "*.h5"
   operations:
+    load-test:
+      main: dataload.load_test
+      flags-import: all
+      requires:
+        - tokenized
+        - tokenized-padded
     pad-tokenized:
       main: preprocess.pad_tokenized
       flags-import: all

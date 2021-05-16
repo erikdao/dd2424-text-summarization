@@ -39,6 +39,7 @@ class ReviewDatasetGlove(data_utils.Dataset):
     def __getitem__(self, idx):
         """
         Get inputs and labels (tokens up to self.max_len) for choosen indexes
+        To embed the data, load glove into nn.Embedding instead
         """
         if torch.is_tensor(idx):
             idx = idx.tolist()
@@ -55,7 +56,8 @@ class ReviewDatasetGlove(data_utils.Dataset):
 def create_dataloader_glove(mappings, word2index, embed_file, batch_size = 100, 
         shuffle = True):
     """
-    Create data loader with glove embeddings
+    Create data loader that returns data as torch IntTensor with glvoe indexes
+    To embed the data, load glove into nn.Embedding instead
     """
     
     dataset = ReviewDatasetGlove(
