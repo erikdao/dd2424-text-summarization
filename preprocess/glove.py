@@ -4,7 +4,11 @@ import torch
 import spacy
 import numpy as np
 
-def load_glove_embeddings(embedding_file):
+# This file contains:
+# def load_glove_embeddings_wordindex()
+# def load_glove_embeddings()
+
+def load_glove_embeddings_wordindex(embedding_file):
     """
     Load GloVe word embeddings
     embedding_file: name of txt file containing GloVe word embeddings
@@ -36,4 +40,30 @@ def load_glove_embeddings(embedding_file):
         word2index[unknown_word] = padding_idx + 1
 
     return N, D, np.array(embeddings, dtype=np.float32), word2index
+
+def load_glove_embeddings(embedding_file):
+    """
+    Load GloVe word embeddings
+    embedding_file: name of txt file containing GloVe word embeddings
+    return:
+    (vector dimension, embedding matrix)
+    """
+    padding_idx = 0
+    padding_word = '<PAD>'
+    unknown_word = '<UNK>'
+
+    embeddings = []
+    with open(embedding_file, encoding='utf8') as f:
+        for _,line in enumerate(f):
+            data = line.split()
+            word = data[0]
+            vec = [float(x) for x in data[1:]]
+            embeddings.append(vec)
+    D = len(embeddings[0])
+
+    if padding_idx is not None and type(padding_idx) is int:
+        embeddings.insert(padding_idx, [0]*D)
+        embeddings.insert(padding_idx + 1, [-1]*D)
+
+    return D, np.array(embeddings, dtype=np.float32)
 

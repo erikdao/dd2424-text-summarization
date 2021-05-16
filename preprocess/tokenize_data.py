@@ -76,7 +76,7 @@ def main():
     # build indexing
     print("creating word2index and loading embeds...")
     vocab_size, word_emb_size, embeddings, word2index = \
-        load_glove_embeddings(embedding_file = EMBEDDING_FILE)
+        load_glove_embeddings_wordindex(embedding_file = EMBEDDING_FILE)
 
     # save embeddings and word2index dict
     #print("embds: ",embeddings)
