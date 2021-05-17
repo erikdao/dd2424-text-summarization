@@ -3,6 +3,12 @@
     - "*.py"
     - "*.h5"
   operations:
+    train-transformer:
+      main: transformer.train
+      flags-import: all
+      requires:
+        - tokenized
+        - tokenized-padded
     load-test:
       main: dataload.load_test
       flags-import: all
