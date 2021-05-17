@@ -13,7 +13,6 @@ from torch.utils import data as data_utils
 from preprocess.glove import *
 from utils.pickle import *
 
-
 class ReviewDatasetGlove(data_utils.Dataset):
     """
     Class to present the Review Dataset
