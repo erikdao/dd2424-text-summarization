@@ -3,7 +3,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import Transformer, ransformerEncoder, TransformerEncoderLayer
+from torch.nn import Transformer, TransformerEncoder, TransformerEncoderLayer
 import PositionalEncoding
 
 class GloveEmbedding():
@@ -14,27 +14,27 @@ class GloveEmbedding():
         self.word_emb.weight = nn.Parameter(torch.from_numpy(embeddings), requires_grad=False)
 
     def load_glove_embeddings(self, embedding_file='glove6B/glove.6B.50d.txt'):
-    """
-    The function to load GloVe word embeddings
-    
-    :param      embedding_file:  The name of the txt file containing GloVe word embeddings
-    :type       embedding_file:  str
-    
-    :returns:   (a vocabulary size, vector dimensionality, embedding matrix, mapping from words to indices)
-    :rtype:     a 4-tuple
-    """
-    word2index, embeddings, N = {}, [], 0
-    with open(embedding_file, encoding='utf8') as f:
-        for line in f:
-            data = line.split()
-            word = data[0]
-            vec = [float(x) for x in data[1:]]
-            embeddings.append(vec)
-            word2index[word] = N
-            N += 1
-    D = len(embeddings[0])
-    
-    return N, D, np.array(embeddings, dtype=np.float32), word2index
+        """
+        The function to load GloVe word embeddings
+
+        :param      embedding_file:  The name of the txt file containing GloVe word embeddings
+        :type       embedding_file:  str
+
+        :returns:   (a vocabulary size, vector dimensionality, embedding matrix, mapping from words to indices)
+        :rtype:     a 4-tuple
+        """
+        word2index, embeddings, N = {}, [], 0
+        with open(embedding_file, encoding='utf8') as f:
+            for line in f:
+                data = line.split()
+                word = data[0]
+                vec = [float(x) for x in data[1:]]
+                embeddings.append(vec)
+                word2index[word] = N
+                N += 1
+        D = len(embeddings[0])
+
+        return N, D, np.array(embeddings, dtype=np.float32), word2index
 
 class SummaryTransformer(nn.Module):
     def __init__(self, vocab_size, d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, max_seq_length, pos_dropout, trans_dropout):
@@ -67,6 +67,7 @@ def main():
     transformer_model = SummaryTransformer(vocab_size, d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, max_seq_length, pos_dropout, trans_dropout)
     
     # TODO DATA tokinization and masking (Adam)
+    """
     train_loader = create_dataloader(
         csv_file='data/amazon-product-reviews/Reviews.csv',
         shuffle=True
@@ -78,6 +79,6 @@ def main():
             print(input_vec, input_vec.shape)
             print(label_vec, label_vec.shape)
             break
-
+    """
 if __name__ == '__main__':
     main()
