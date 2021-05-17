@@ -23,10 +23,16 @@ def main():
             in_sent.append((pad, 0))
         while len(lab_sent) < MAX_SENTENCE_LEN:
             lab_sent.append((pad, 0))
-    if len(in_sent) > MAX_SENTENCE_LEN:
-        in_sent = in_sent[:MAX_SENTENCE_LEN]
-    if len(lab_sent) > MAX_SENTENCE_LEN:
-        lab_sent = lab_sent[:MAX_SENTENCE_LEN]
+        if len(in_sent) > MAX_SENTENCE_LEN:
+            in_sent = in_sent[:MAX_SENTENCE_LEN]
+        if len(lab_sent) > MAX_SENTENCE_LEN:
+            lab_sent = lab_sent[:MAX_SENTENCE_LEN]
+        
+        assert len(in_sent) == MAX_SENTENCE_LEN
+        assert len(lab_sent) == MAX_SENTENCE_LEN
+
+        mappings["inputs"][i] = in_sent
+        mappings["labels"][i] = lab_sent
 
     print("Saving padded mappings...")
     pickle_save("./tokenized-padded", mappings) 

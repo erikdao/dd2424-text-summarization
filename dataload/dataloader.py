@@ -13,6 +13,8 @@ from torch.utils import data as data_utils
 from preprocess.glove import *
 from utils.pickle import *
 
+MAX_SENTENCE_LEN = 128
+
 class ReviewDatasetGlove(data_utils.Dataset):
     """
     Class to present the Review Dataset
@@ -24,7 +26,7 @@ class ReviewDatasetGlove(data_utils.Dataset):
         self.embed_dim, self.embeddings = load_glove_embeddings(embed_file)
         inputs = mappings['inputs']
         labels = mappings['labels']
-        inputs_idxs = [[toktup[1] for toktup in in_sentence] for in_sentence in inputs]    
+        inputs_idxs = [[toktup[1] for toktup in in_sentence] for in_sentence in inputs]
         inputs_idxs = torch.IntTensor(inputs_idxs) 
         label_idxs = [[toktup[1] for toktup in in_sentence] for in_sentence in labels]    
         label_idxs = torch.IntTensor(label_idxs) 
