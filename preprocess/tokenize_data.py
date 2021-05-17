@@ -12,7 +12,7 @@ from preprocess.glove import *
 from utils.pickle import *
 
 CSV_FILE = '../data/amazon-product-reviews/Reviews.csv'
-EMBEDDING_FILE = './glove.6B.50d.txt'
+EMBEDDING_FILE = '../data/glove6B/glove.6B.50d.txt'
 #WORD2INDEX_FILE = 'w2i.pickle'
 #TOKENIZED_DATA_FILE = 'tokenized.pickle'
 
@@ -31,7 +31,7 @@ def tokenize_data(inputs, labels, word2index):
         {
             'inputs': [[(token, tokenidx),  ...], ...], 
             'labels': [[(token, tokenidx),  ...], ...]
-         }
+        }
     n_valid_points: number of valid points after spacy tokenizer
     """
 
