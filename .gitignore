@@ -108,6 +108,8 @@ ENV/
 
 # other
 .vscode
-data/amazon-product-reviews
+Reviews.csv
 data/glove.6B
 glove6B
+preprocess/glove.6B.50d.txt
+
