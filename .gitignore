@@ -113,3 +113,5 @@ data/glove.6B
 glove6B
 preprocess/glove.6B.50d.txt
 
+# Guild ai
+.guild/*

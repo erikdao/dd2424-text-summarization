@@ -77,15 +77,22 @@ class Decoder(nn.Module):
     """
     The Decoder is a single LSTM
     """
-    def __init__(self, output_dim, emb_dim, enc_hid_dim, dec_hid_dim, dropout, attention):
+    def __init__(self,
+        output_dim: typing.Optional[int],
+        embedding_dim: typing.Optional[int],
+        encoder_hidden_dim: typing.Optional[int],
+        decocder_hidden_dim: typing.Optional[int],
+        dropout: typing.Optional[float],
+        attention: typing.Optional[typing.Any],
+    ):
         super().__init__()
 
         self.output_dim = output_dim
         self.attention = attention
 
-        self.embedding = nn.Embedding(output_dim, emb_dim)
-        self.rnn = nn.LSTM((enc_hid_dim * 2) + emb_dim, dec_hid_dim)
-        self.fc_out = nn.Linear((enc_hid_dim * 2) + dec_hid_dim + emb_dim, output_dim)
+        self.embedding = nn.Embedding(output_dim, embedding_dim)
+        self.rnn = nn.LSTM((encoder_hidden_dim * 2) + embedding_dim, decocder_hidden_dim)
+        self.fc_out = nn.Linear((encoder_hidden_dim * 2) + decocder_hidden_dim + embedding_dim, output_dim)
 
         self.dropout = nn.Dropout(dropout)
 
@@ -119,17 +126,26 @@ class LSTMSummary(pl.LightningModule):
     """
     def __init__(self,
         vocab_size: typing.Optional[int],
+        input_dim: typing.Optional[int],
+        output_dim: typing.Optional[int],
         embedding_dim: typing.Optional[int],
         encoder_hidden_dim: typing.Optional[int],
         decoder_hidden_dim: typing.Optional[int],
         encoder_dropout: typing.Optional[float] = 0.5,
+        decoder_dropout: typing.Optional[float] = 0.5,
         text_pad_idx: typing.Optional[typing.Any] = None
     ):
         super().__init__()
 
-        self.encoder = Encoder(vocab_size=vocab_size, )
-        self.attention = Attention()
-        self.decoder = Decoder()
+        self.encoder = Encoder(
+            input_dim, encoder_hidden_dim, encoder_hidden_dim,
+            decoder_hidden_dim, encoder_dropout
+        )
+        self.attention = Attention(encoder_hidden_dim, decoder_hidden_dim)
+        self.decoder = Decoder(
+            output_dim, embedding_dim, encoder_hidden_dim, decoder_hidden_dim,
+            decoder_dropout, self.attention
+        )
         self.text_pad_idx = text_pad_idx
 
         # Initialize weights
@@ -140,13 +156,6 @@ class LSTMSummary(pl.LightningModule):
                 torch.nn.init.xavier_uniform_(param)
             if 'bias' in name:
                 torch.nn.init.constant_(param)
- 
-    # def forward(self, input_batch):
-    #     batch_size = input_batch.shape[1]
-    #     summary_vocab_size = self.decoder.output_dim
-
-    #     outputs = torch.zeros(256, batch_size, summary_vocab_size)
-    #     encoder_outputs, hidden = self.encoder(input_batch, )
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=1e-3)

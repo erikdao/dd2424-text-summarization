@@ -1,3 +1,6 @@
+import os
+from os.path import isdir
+
 from utils.pickle import *
 from dataload.dataloader import *
 

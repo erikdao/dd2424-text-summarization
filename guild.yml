@@ -1,7 +1,9 @@
 - model: reviews
   sourcecode:
-    - "*.py"
-    - "*.h5"
+    select:
+      - "*.py"
+      - "*.h5"
+    
   operations:
     load-test:
       main: dataload.load_test
@@ -17,6 +19,12 @@
     tokenize-data:
       main: preprocess.tokenize_data
       flags-import: all
+    train-lstm:
+      main: lstm.train_lstm
+      flags-import: all
+      requires:
+        - tokenized
+        - tokenized-padded
   resources:
     tokenized:
       path: tokenized 

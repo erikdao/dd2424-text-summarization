@@ -11,6 +11,8 @@ import pickle
 from preprocess.glove import *
 from utils.pickle import *
 
+current_dir = os.getcwd()
+print('current_dir', current_dir)
 CSV_FILE = '../data/amazon-product-reviews/Reviews.csv'
 EMBEDDING_FILE = '../data/glove6B/glove.6B.50d.txt'
 #WORD2INDEX_FILE = 'w2i.pickle'
