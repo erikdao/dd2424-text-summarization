@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 
 from lstm.logger import logger
+from utils.glove_embedding import GloveEmbedding
 
 pl.seed_everything(1)
 torch.backends.cudnn.deterministic = True
@@ -25,25 +26,43 @@ class Encoder(nn.Module):
     The Encoder is a bidirectional LSTM
     """
     def __init__(self,
-        vocab_size: typing.Optional[int], embedding_dim: typing.Optional[int],
+        embeddings: typing.Optional[typing.Any], embedding_dim: typing.Optional[int], word2index: typing.Optional[typing.Any],
         encoder_hidden_dim: typing.Optional[int], decoder_hidden_dim: typing.Optional[int],
-        dropout: typing.Optional[float] = 0.1
+        dropout: typing.Optional[float] = 0.5
     ):
 
         super().__init__()
 
-        self.embedding = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, encoder_hidden_dim, bidirectional=True)
+        self.embedding = GloveEmbedding(embeddings, embedding_dim, word2index)
+        # batch_first = True, as the dim of self.embedding is [batch_size, sentence_length, embedding_dim]
+        self.lstm = nn.LSTM(embedding_dim, encoder_hidden_dim, batch_first=True, bidirectional=True)
         self.fc = nn.Linear(encoder_hidden_dim * 2, decoder_hidden_dim)
 
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, text, text_len):
-        embedded = self.dropout(self.embedding(text))
-        packed_embedded = nn.utils.rnn.pack_padded_sequence(embedded, text_len)
-        packed_outputs, hidden = self.rnn(packed_embedded)
-        outputs, _ = nn.utils.rnn.pad_packed_sequence(packed_outputs)
-        hidden = torch.tanh(self.fc(torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)))
+        for name, param in self.named_parameters():
+            if 'weight' in name:
+                torch.nn.init.xavier_uniform_(param)
+            if 'bias' in name:
+                torch.nn.init.constant_(param, 0.0)
+
+    def forward(self, text):
+        """
+        Params:
+            text - Tensor: [batch_size, sentence_lenghth]
+
+        Returns:
+            outputs - Tensor: [batch_size, sentence_length, encoder_hidden_dim]
+            hidden - Tensor: [batch_size, decoder_hidden_dim]
+        """
+        embedded = self.dropout(self.embedding.forward(text))
+        outputs, (h_0, c_0) = self.lstm(embedded)
+
+        # Since self.lstm is bidrection, h_0 dim is [2, batch_size, encoder_hidden_dim]
+        # and we want to produce a hidden state vector of dim [batch_size, decoder_hidden_dim]
+        # Therefore, we concatnate the first dimension of h_0 and feed it to the fc layer
+        # of the encoder
+        hidden = torch.tanh(self.fc(torch.cat((h_0[-2, :, :], h_0[-1, :, :]), dim=1)))
 
         return outputs, hidden
 
@@ -78,46 +97,42 @@ class Decoder(nn.Module):
     The Decoder is a single LSTM
     """
     def __init__(self,
+        embeddings: typing.Optional[typing.Any],
+        word2index: typing.Optional[typing.Any],
         output_dim: typing.Optional[int],
         embedding_dim: typing.Optional[int],
         encoder_hidden_dim: typing.Optional[int],
         decocder_hidden_dim: typing.Optional[int],
         dropout: typing.Optional[float],
-        attention: typing.Optional[typing.Any],
+        # attention: typing.Optional[Attention],
     ):
         super().__init__()
 
         self.output_dim = output_dim
-        self.attention = attention
+        # self.attention = attention
 
-        self.embedding = nn.Embedding(output_dim, embedding_dim)
-        self.rnn = nn.LSTM((encoder_hidden_dim * 2) + embedding_dim, decocder_hidden_dim)
+        self.embedding = GloveEmbedding(embeddings, embedding_dim, word2index)
+        self.lstm = nn.LSTM((encoder_hidden_dim * 2) + embedding_dim, decocder_hidden_dim, batch_first=True)
         self.fc_out = nn.Linear((encoder_hidden_dim * 2) + decocder_hidden_dim + embedding_dim, output_dim)
 
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, input_, hidden, encoder_outputs, mask):
-        input_ = input_.unsqueeze(0)
-        embedded = self.dropout(self.embedding(input_))
+        for name, param in self.named_parameters():
+            if 'weight' in name:
+                torch.nn.init.xavier_uniform_(param)
+            if 'bias' in name:
+                torch.nn.init.constant_(param, 0.0)
 
-        attn = self.attention(hidden, encoder_outputs, mask)
-        attn = attn.unsqueeze(1)
-
-        encoder_outputs = encoder_outputs.permute(1, 0, 2)
-        weighted = torch.bmm(attn, encoder_outputs)
-
-        weighted = weighted.permute(1, 0, 2)
-        rnn_input_ = torch.cat((embedded, weighted), dim=2)
-
-        output, hidden = self.rnn(rnn_input_, hidden.unsqueeze(0))
+    def forward(self, input, hidden):
+        embedded = self.dropout(self.embedding.forward(input))
+        output, (hidden, _) = self.lstm(embedded.unsqueeze(1), (hidden.unsqueeze(0), hidden.unsqueeze(0)))
 
         embedded = embedded.squeeze(0)
         output = output.squeeze(0)
-        weighted = weighted.squeeze(0)
+        pred = self.fc_out(torch.cat((output, embedded), dim=1))
+        import pdb; pdb.set_trace();
 
-        prediction = self.fc_out(torch.cat((output, weighted, embedded), dim=1))
-
-        return prediction, hidden.squeeze(0), attn.squeeze(1)
+        return pred, hidden.squeeze(0)
 
 
 class LSTMSummary(pl.LightningModule):
@@ -144,7 +159,7 @@ class LSTMSummary(pl.LightningModule):
         self.attention = Attention(encoder_hidden_dim, decoder_hidden_dim)
         self.decoder = Decoder(
             output_dim, embedding_dim, encoder_hidden_dim, decoder_hidden_dim,
-            decoder_dropout, self.attention
+            decoder_dropout
         )
         self.text_pad_idx = text_pad_idx
 

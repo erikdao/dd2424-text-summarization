@@ -1,12 +1,10 @@
-import os
-from os.path import isdir
-
 from utils.pickle import *
 from dataload.dataloader import *
 
 from utils.glove_embedding import *
 
 EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
+EMBEDDING_SIZE = 50
 
 def main():
     input_dir_tok = "./tokenized-padded"
@@ -19,7 +17,7 @@ def main():
     word2index = pickle_load(word2index_pickle)
 
     print("testing glove embedding layer...")
-    glove_embedding = GloveEmbedding(EMBEDDING_FILE, word2index)
+    glove_embedding = GloveEmbedding(EMBEDDING_FILE, EMBEDDING_SIZE, word2index)
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
