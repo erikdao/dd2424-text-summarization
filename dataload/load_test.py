@@ -1,7 +1,7 @@
 from utils.pickle import *
 from dataload.dataloader import *
 
-EMBEDDING_FILE = './glove.6B.50d.txt'
+EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
 
 def main():
     input_dir_tok = "./tokenized-padded"
