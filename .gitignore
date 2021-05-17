@@ -109,4 +109,5 @@ ENV/
 # other
 .vscode
 data/amazon-product-reviews
+data/glove.6B
 glove6B
