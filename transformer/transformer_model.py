@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch.nn import Transformer, TransformerEncoder, TransformerEncoderLayer
 import positional_encoding
 
-from utils/glove_embedding import *
+from utils.glove_embedding import *
 
 class SummaryTransformer(nn.Module):
     def __init__(self, vocab_size, d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, max_seq_length, pos_dropout, trans_dropout):

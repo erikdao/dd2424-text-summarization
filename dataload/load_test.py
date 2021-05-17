@@ -1,6 +1,8 @@
 from utils.pickle import *
 from dataload.dataloader import *
 
+from utils.glove_embedding import *
+
 EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
 
 def main():
@@ -13,6 +15,9 @@ def main():
     word2index_pickle = input_dir_w2i + "/word2index"
     word2index = pickle_load(word2index_pickle)
 
+    print("testing glove embedding layer...")
+    glove_embedding = GloveEmbedding(EMBEDDING_FILE, word2index)
+
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
         mappings = mappings,
@@ -22,10 +27,13 @@ def main():
         shuffle=True
     )
     for idx, data in enumerate(train_loader):
-        input_vec = data['input']
+        input_vec = data['input'] # indecies
+        in_emb = glove_embedding.forward(input_vec)
+        
         label_vec = data['label']
         print(input_vec, input_vec.shape)
         print(label_vec, label_vec.shape)
+        print(in_emb.shape)
         if idx > 2:
             break
 
