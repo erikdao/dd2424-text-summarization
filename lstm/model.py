@@ -38,6 +38,11 @@ class Encoder(nn.Module):
 
         self.dropout = nn.Dropout(p=dropout)
 
+        # # Initialize weights
+        # for name, param in self.named_parameters():
+        #     if 'weight' in name:
+        #         torch.nn
+
     def forward(self, text, text_len):
         embedded = self.dropout(self.embedding(text))
         packed_embedded = nn.utils.rnn.pack_padded_sequence(embedded, text_len)
@@ -117,10 +122,13 @@ class LSTMSummary(pl.LightningModule):
     """
     Text Summarization model based on bidrectional LSTM encoder-decoder
     """
-    def __init__(self, encoder, decoder, text_pad_idx: typing.Optional[], device):
+    def __init__(self,
+        vocab_size: typing.Optional[int], embedding_dim: typing.Optional[int],
+        encoder_hidden_dim: typing.Optional[int], decoder_hidden_dim: typing.Optional[int],
+        encoder_dropout: typing.Optional[float] = 0.5):
         super().__init__()
 
-        self.encoder = encoder
+        self.encoder = Encoder()
         self.decoder = decoder
         self.text_pad_idx = text_pad_idx
     

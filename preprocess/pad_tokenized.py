@@ -18,7 +18,7 @@ def main():
     print("Padding sentences...")
     for i in tqdm(range(n_points)):
         in_sent = mappings["inputs"][i]
-        lab_sent = mappings["inputs"][i]
+        lab_sent = mappings["labels"][i]
         while len(in_sent) < MAX_SENTENCE_LEN:
             in_sent.append((pad, 0))
         while len(lab_sent) < MAX_SENTENCE_LEN:
