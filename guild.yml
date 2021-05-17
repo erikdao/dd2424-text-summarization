@@ -1,0 +1,28 @@
+- model: reviews
+  sourcecode:
+    - "*.py"
+    - "*.h5"
+  operations:
+    load-test:
+      main: dataload.load_test
+      flags-import: all
+      requires:
+        - tokenized
+        - tokenized-padded
+    pad-tokenized:
+      main: preprocess.pad_tokenized
+      flags-import: all
+      requires:
+        - tokenized
+    tokenize-data:
+      main: preprocess.tokenize_data
+      flags-import: all
+  resources:
+    tokenized:
+      path: tokenized 
+      sources:
+        - operation: tokenize-data 
+    tokenized-padded:
+      path: tokenized-padded
+      sources:
+        - operation: pad-tokenized 
