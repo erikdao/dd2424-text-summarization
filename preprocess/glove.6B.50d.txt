@@ -1,0 +1,1 @@
+../../../KTH/kth-work/lang-eng/language-engineering/neural-nets/glove.6B.50d.txt

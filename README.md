@@ -14,3 +14,18 @@ Contributors:
 poetry install
 ```
 - If you don't want to use poetry, you can simply install the dependencies on your computer from the `requirements.txt` file
+
+# Guild Setup
+
+Install inside virtual environment:
+```
+pip install guildai
+guild check
+guild completion --install
+```
+Check available operations:
+```
+guild operations
+```
+See docs for rest of usage: https://my.guild.ai/t/get-started-with-guild-ai/35
+
