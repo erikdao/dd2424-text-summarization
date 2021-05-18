@@ -34,12 +34,13 @@ def main():
     model = LSTMSummary(input_size=vocab_size, hidden_size=config.HIDDEN_SIZE, output_size=vocab_size)
     print(model)
     
-    trainer = pl.Trainer(fast_dev_run=False, max_epochs=config.EPOCHES, gpus=1)
-    trainer.fit(model, train_loader, test_loader)
-    # for idx, data in enumerate(train_loader):
-    #     model.training_step(data)
-    #     if idx > 0:
-    #         break
+    # trainer = pl.Trainer(
+    #     gpus=1,
+    #     fast_dev_run=False,
+    #     max_epochs=config.EPOCHES,
+    #     val_check_interval=config.VAL_CHECK_STEP
+    # )
+    # trainer.fit(model, train_loader, test_loader)
 
 
 if __name__ == '__main__':

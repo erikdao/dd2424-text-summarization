@@ -13,6 +13,7 @@ from glove import extend_glove
 
 glove = extend_glove(vocab.GloVe(name='6B', dim=50))
 
+
 class Encoder(pl.LightningModule):
     def __init__(self, input_size, hidden_size):
         super().__init__()
@@ -63,8 +64,6 @@ class LSTMSummary(pl.LightningModule):
         self.encoder = Encoder(input_size, hidden_size)
         self.decoder = Decoder(hidden_size, output_size)
 
-        # self.criterion = nn.CrossEntropyLoss()
-
         # Initialize weights:
         for name, params in self.named_parameters():
             if 'embedding' in name:
@@ -96,6 +95,7 @@ class LSTMSummary(pl.LightningModule):
             glove.stoi[config.PAD_TOKEN],
             dtype=torch.float, requires_grad=True
         ).to(self.device)
+
         for di in range(config.OUTPUT_LENGTH):
             decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
             outputs[di] = decoder_output
@@ -127,4 +127,13 @@ class LSTMSummary(pl.LightningModule):
         pred_tensor = self.forward(input_tensor)
         loss = F.cross_entropy(pred_tensor.float(), label_tensor.squeeze())
         self.log('train_loss', loss, on_step=True, on_epoch=True)
+        return loss
+    
+    def validation_step(self, val_batch, val_idx) -> Optional[STEP_OUTPUT]:
+        input_tensor = val_batch['input']
+        label_tensor = val_batch['label']
+
+        pred_tensor = self.forward(input_tensor)
+        loss = F.cross_entropy(pred_tensor.float(), label_tensor.squeeze())
+        self.log('val_loss', loss, on_step=True, on_epoch=True)
         return loss

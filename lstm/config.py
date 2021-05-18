@@ -14,4 +14,8 @@ class Config(object):
     UNK_TOKEN = "<UNK>"
     EPOCHES = 20
 
+    # How often in one training epoch to check
+    # for performance on validation set
+    VAL_CHECK_STEP = 10000
+
 config = Config()
