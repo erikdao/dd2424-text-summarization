@@ -13,7 +13,7 @@ class Config(object):
     MOMENTUM = 0.9
     PAD_TOKEN = "<PAD>"
     EOS_TOKEN = "<UNK>"
-    EPOCHES = 20
+    EPOCHES = 100
 
     # How often in one training epoch to check
     # for performance on validation set

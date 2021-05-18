@@ -42,7 +42,8 @@ def main():
         gpus=1,
         fast_dev_run=False,
         max_epochs=config.EPOCHES,
-        val_check_interval=config.VAL_CHECK_STEP
+        val_check_interval=config.VAL_CHECK_STEP,
+        gradient_clip_val=1.0
     )
     trainer.fit(model, train_loader, val_loader)
 
