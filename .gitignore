@@ -115,3 +115,5 @@ preprocess/glove.6B.50d.txt
 
 # Guild ai
 .guild/*
+
+lstm/.vector_cache
