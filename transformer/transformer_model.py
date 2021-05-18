@@ -5,8 +5,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Transformer, TransformerEncoder, TransformerEncoderLayer
 from transformer.positional_encoding import PositionalEncoding
+from torch.nn import (TransformerEncoder, TransformerDecoder,
+                      TransformerEncoderLayer, TransformerDecoderLayer)
+
+import math
+from collections import Counter
+
+import io
+import time
 
 from utils.glove_embedding import *
+import torch.nn.functional as F
+
+torch.manual_seed(0)
+torch.use_deterministic_algorithms(True)
 
 class SummaryTransformer(nn.Module):
     def __init__(self, 
@@ -22,20 +34,51 @@ class SummaryTransformer(nn.Module):
                 word2index,
                 embeddings):
         super().__init__()
+        self.model_type = 'Transformer'
         self.d_model = d_model
         self.embed_src = GloveEmbedding(embeddings, d_model, word2index)
         self.embed_tgt = GloveEmbedding(embeddings, d_model, word2index)
         self.pos_enc = PositionalEncoding(d_model, pos_dropout, max_seq_length)
 
-        self.transformer = Transformer(d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, trans_dropout)
-        self.fully_connected = nn.Linear(d_model, vocab_size)
+        encoder_layer = TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward)
+        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
+        decoder_layer = TransformerDecoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward)
+        self.transformer_decoder = TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
+    
+        self.generator = nn.Linear(d_model, vocab_size)
 
-    def forward(self, src, tgt, src_key_padding_mask=None, tgt_key_padding_mask=None, memory_key_padding_mask=None, tgt_mask=None):
-        #src = rearrange(src, 'n s -> s n')
-        #tgt = rearrange(tgt, 'n t -> t n')
-        src = self.pos_enc(self.embed_src.forward((src)) * math.sqrt(self.d_model))
-        tgt = self.pos_enc(self.embed_tgt.forward((tgt)) * math.sqrt(self.d_model))
+    def forward(self, src, tgt, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, memory_key_padding_mask):
+        src_emb = self.pos_enc(self.embed_src.forward((src)))
+        tgt_emb = self.pos_enc(self.embed_tgt.forward((tgt)))
+        memory = self.transformer_encoder(src_emb, src_mask, src_padding_mask)
+        outs = self.transformer_decoder(tgt_emb, memory, tgt_mask, None, tgt_padding_mask, memory_key_padding_mask)
+        return self.generator(outs)
 
-        output = self.transformer(src, tgt)# optional, tgt_mask=tgt_mask, src_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask, memory_key_padding_mask=memory_key_padding_mask
-        #output = rearrange(output, 't n e -> n t e')
-        return self.fully_connected(output)
+    def encode(self, src, src_mask):
+        return self.transformer_encoder(self.positional_encoding(self.embed_src(src)), src_mask)
+
+    def decode(self, tgt, memory, tgt_mask):
+        return self.transformer_decoder(self.positional_encoding(self.embed_tgt(tgt)), memory, tgt_mask)
+
+
+
+
+
+
+
+# helper function
+def generate_square_subsequent_mask(sz, DEVICE):
+    mask = (torch.triu(torch.ones((sz, sz), device=DEVICE)) == 1).transpose(0, 1)
+    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+    return mask
+
+def create_mask(src, tgt, DEVICE):
+    src_seq_len = src.shape[0]
+    tgt_seq_len = tgt.shape[0]
+
+    tgt_mask = generate_square_subsequent_mask(tgt_seq_len, DEVICE)
+    src_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
+
+    src_padding_mask = (src == 0).transpose(0, 1)
+    tgt_padding_mask = (tgt == 0).transpose(0, 1)
+    return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
