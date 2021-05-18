@@ -9,5 +9,6 @@ class Config(object):
     ENCODER_HIDDEN_SIZE = 512
     DECODER_HIDDEN_SIZE = 512
     BATCH_SIZE = 100
+    LEARNING_RATE = 1e-3
 
 config = Config()

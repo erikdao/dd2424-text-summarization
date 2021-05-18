@@ -10,6 +10,7 @@ from logger import logger
 from model_v2 import LSTMSummary
 from dataloader import create_dataloader
 from config import config
+from glove import glove
 
 
 def main():
@@ -20,24 +21,16 @@ def main():
     logger.info("Loading train data...")
     train_loader = create_dataloader(csv_file=train_csv, shuffle=True)
 
-    for idx, data in enumerate(train_loader):
-        input_tensor = data['input']
-        output_tensor = data['label']
-        print('input_tensor', input_tensor.shape, input_tensor)
-        print('output_tensor', output_tensor.shape)
-
-        if idx > 3:
-            break
-
     logger.info("Loading test data...")
     test_loader = create_dataloader(csv_file=test_csv, shuffle=False)
-    for idx, data in enumerate(test_loader):
-        input_tensor = data['input']
-        output_tensor = data['label']
-        print('input_tensor', input_tensor.shape)
-        print('output_tensor', output_tensor.shape)
 
-        if idx > 3:
+    vocab_size = len(glove.stoi.keys())
+    model = LSTMSummary(input_size=vocab_size, hidden_size=config.HIDDEN_SIZE, output_size=vocab_size)
+    print(model)
+
+    for idx, data in enumerate(train_loader):
+        model.forward(data)
+        if idx > 0:
             break
 
 
