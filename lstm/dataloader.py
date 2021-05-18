@@ -95,7 +95,7 @@ def create_dataloader(
     """
     dataset = ReviewDataset(csv_file=csv_file, transform=GloveEmbeddingTransform())
     loader = data_utils.DataLoader(
-        dataset, batch_size=batch_size, shuffle=shuffle, num_workers=16
+        dataset, batch_size=batch_size, shuffle=shuffle, num_workers=8
     )
 
     return loader

@@ -9,13 +9,14 @@ class Config(object):
     ENCODER_HIDDEN_SIZE = 128
     DECODER_HIDDEN_SIZE = 128
     BATCH_SIZE = 100
-    LEARNING_RATE = 1e-3
+    LEARNING_RATE = 3e-2
+    MOMENTUM = 0.9
     PAD_TOKEN = "<PAD>"
-    UNK_TOKEN = "<UNK>"
+    EOS_TOKEN = "<UNK>"
     EPOCHES = 20
 
     # How often in one training epoch to check
     # for performance on validation set
-    VAL_CHECK_STEP = 10000
+    VAL_CHECK_STEP = 1000
 
 config = Config()
