@@ -7,7 +7,8 @@ import typing
 import pytorch_lightning as pl
 
 from lstm.logger import logger
-from lstm.model import Decoder, LSTMSummary, Encoder, Decoder
+# from lstm.model import Decoder, LSTMSummary, Encoder, Decoder
+from lstm.model_v2 import LSTMSummary
 
 from dataload.dataloader import create_dataloader_glove
 from utils.pickle import pickle_load
@@ -39,33 +40,23 @@ def main():
     )
 
     logger.info("Load embeddings...")
-    word_emb_size, embeddings = load_glove_embeddings(EMBEDDING_FILE)
-    
-    encoder = Encoder(embeddings=embeddings, embedding_dim=word_emb_size,
-                      word2index=word2index, encoder_hidden_dim=256, decoder_hidden_dim=256,
-                      dropout=0.5)
-    print(encoder)
+    # word_emb_size, embeddings = load_glove_embeddings(EMBEDDING_FILE)
 
-    decoder = Decoder(embeddings=embeddings, word2index=word2index, embedding_dim=word_emb_size,
-                      output_dim=1024, encoder_hidden_dim=256, decocder_hidden_dim=256, dropout=0.5)
-    print(decoder)
+    input_size = len(word2index.keys())
+    hidden_size = 512
+    output_size = len(word2index.keys())
+
+    model = LSTMSummary(input_size, hidden_size, output_size)
+    print(model)
 
     for idx, data in enumerate(train_loader):
-        input_vec = data['input']
-        label_vec = data['label']
-        print('label_vec', label_vec.shape)
-        encoder_outputs, hidden = encoder.forward(input_vec)
-        print('hidden', hidden.shape)
+        input, label = data['input'], data['label']
 
-
-        input_ = label_vec[:, 0]  # First word of the label
-        outputs = []
-        for i in range(1, label_vec.shape[1]):
-            output, hidden = decoder.forward(input_, hidden)
-            outputs.append(output)
-        
-        if idx > 0:
+        outputs = model.forward(input)
+        import pdb; pdb.set_trace();
+        if idx > 1:
             break
+
 
 if __name__ == '__main__':
     main()
