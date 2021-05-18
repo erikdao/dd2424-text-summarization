@@ -6,55 +6,38 @@ import typing
 
 import pytorch_lightning as pl
 
-from lstm.logger import logger
-# from lstm.model import Decoder, LSTMSummary, Encoder, Decoder
-from lstm.model_v2 import LSTMSummary
-
-from dataload.dataloader import create_dataloader_glove
-from utils.pickle import pickle_load
-from utils.glove_embedding import load_glove_embeddings
-
-EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
+from logger import logger
+from model_v2 import LSTMSummary
+from dataloader import create_dataloader
+from config import config
 
 
 def main():
-    input_dir_tok = "./tokenized-padded"
-    input_dir_w2i = "./tokenized"
-    logger.info("Loading mappings...")
-    mappings_pickle = input_dir_tok + "/tokenized-padded"
-    mappings = pickle_load(mappings_pickle)
-    sequence_length = len(mappings['inputs'][0])
-    logger.debug(f"seq length {sequence_length}")
+    data_dir = os.path.join(os.path.dirname(os.getcwd()), 'data', 'amazon-product-reviews')
+    train_csv = os.path.join(data_dir, 'train.csv')
+    test_csv = os.path.join(data_dir, 'test.csv')
 
-    logger.info("Loading word2index...")
-    word2index_pickle = input_dir_w2i + "/word2index"
-    word2index = pickle_load(word2index_pickle)
-
-    logger.info("Loading train loader...")
-    train_loader = create_dataloader_glove(
-        mappings = mappings,
-        word2index = word2index,
-        embed_file = EMBEDDING_FILE,
-        batch_size = 100,
-        shuffle=True
-    )
-
-    logger.info("Load embeddings...")
-    # word_emb_size, embeddings = load_glove_embeddings(EMBEDDING_FILE)
-
-    input_size = len(word2index.keys())
-    hidden_size = 512
-    output_size = len(word2index.keys())
-
-    model = LSTMSummary(input_size, hidden_size, output_size)
-    print(model)
+    logger.info("Loading train data...")
+    train_loader = create_dataloader(csv_file=train_csv, shuffle=True)
 
     for idx, data in enumerate(train_loader):
-        input, label = data['input'], data['label']
+        input_tensor = data['input']
+        output_tensor = data['label']
+        print('input_tensor', input_tensor.shape, input_tensor)
+        print('output_tensor', output_tensor.shape)
 
-        outputs = model.forward(input)
-        import pdb; pdb.set_trace();
-        if idx > 1:
+        if idx > 3:
+            break
+
+    logger.info("Loading test data...")
+    test_loader = create_dataloader(csv_file=test_csv, shuffle=False)
+    for idx, data in enumerate(test_loader):
+        input_tensor = data['input']
+        output_tensor = data['label']
+        print('input_tensor', input_tensor.shape)
+        print('output_tensor', output_tensor.shape)
+
+        if idx > 3:
             break
 
 
