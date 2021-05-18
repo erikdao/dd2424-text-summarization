@@ -117,3 +117,4 @@ preprocess/glove.6B.50d.txt
 .guild/*
 
 lstm/.vector_cache
+lstm/lightning_logs

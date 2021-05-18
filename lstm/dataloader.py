@@ -12,6 +12,7 @@ from torchtext.data import get_tokenizer
 from torch.utils import data as data_utils
 
 from config import config
+from glove import extend_glove
 
 
 class GloveEmbeddingTransform(object):
@@ -20,7 +21,7 @@ class GloveEmbeddingTransform(object):
     from the embedding tensors of all tokens in the sentence
     """
     def __init__(self):
-        self.glove = vocab.GloVe(name='6B', dim=50)
+        self.glove = extend_glove(vocab.GloVe(name='6B', dim=50))
         self.tokenizer = get_tokenizer('spacy', language='en_core_web_sm')
 
     def _tokenize(self, sentence: typing.Optional[str]) -> typing.List[typing.Any]:
@@ -38,8 +39,10 @@ class GloveEmbeddingTransform(object):
         assert len(input_tokens) <= config.INPUT_LENGTH
 
         input_vec = [self.glove.stoi[token] for token in input_tokens if token in self.glove.stoi]
+        while (len(input_vec) < config.INPUT_LENGTH):
+            input_vec.append(self.glove.stoi[config.PAD_TOKEN])
+        assert len(input_vec) == config.INPUT_LENGTH
         input_tensor = torch.tensor(input_vec, dtype=torch.long)
-        # input_tensor = torch.nn.utils.rnn.pack_padded_sequence(input_tensor, torch.IntTensor(config.INPUT_LENGTH), batch_first=True)
     
         label_tokens = self._tokenize(label)
         if len(label_tokens) > config.OUTPUT_LENGTH:
@@ -47,8 +50,10 @@ class GloveEmbeddingTransform(object):
         assert len(label_tokens) <= config.INPUT_LENGTH
 
         label_vec = [self.glove.stoi[token] for token in label_tokens if token in self.glove.stoi]
+        while len(label_vec) < config.OUTPUT_LENGTH:
+            label_vec.append(self.glove.stoi[config.PAD_TOKEN])
+        assert len(label_vec) == config.OUTPUT_LENGTH
         label_tensor = torch.tensor(label_vec, dtype=torch.long)
-        # label_tensor = torch.nn.utils.rnn.pack_padded_sequence(label_tensor, torch.IntTensor(config.OUTPUT_LENGTH), batch_first=True)
 
         return {'input': input_tensor, 'label': label_tensor}
 
@@ -90,7 +95,7 @@ def create_dataloader(
     """
     dataset = ReviewDataset(csv_file=csv_file, transform=GloveEmbeddingTransform())
     loader = data_utils.DataLoader(
-        dataset, batch_size=batch_size, shuffle=shuffle
+        dataset, batch_size=batch_size, shuffle=shuffle, num_workers=16
     )
 
     return loader
