@@ -48,10 +48,18 @@ class SummaryTransformer(nn.Module):
         self.generator = nn.Linear(d_model, vocab_size)
 
     def forward(self, src, tgt, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, memory_key_padding_mask):
-        src_emb = self.pos_enc(self.embed_src.forward((src)))
-        tgt_emb = self.pos_enc(self.embed_tgt.forward((tgt)))
+        src_emb = self.embed_src.forward((src))
+        tgt_emb = self.embed_tgt.forward((tgt))
+        src_emb = self.sequence_to_first_dimension(src_emb)
+        tgt_emb = self.sequence_to_first_dimension(tgt_emb)
+        src_emb = self.pos_enc(src_emb)
+        tgt_emb = self.pos_enc(tgt_emb)
+        
+        print("encoding...")
         memory = self.transformer_encoder(src_emb, src_mask, src_padding_mask)
+        print("decoding...")
         outs = self.transformer_decoder(tgt_emb, memory, tgt_mask, None, tgt_padding_mask, memory_key_padding_mask)
+        print("generate output...")
         return self.generator(outs)
 
     def encode(self, src, src_mask):
@@ -60,8 +68,15 @@ class SummaryTransformer(nn.Module):
     def decode(self, tgt, memory, tgt_mask):
         return self.transformer_decoder(self.positional_encoding(self.embed_tgt(tgt)), memory, tgt_mask)
 
+    def sequence_to_first_dimension(self, tensor, batch=None):
+        assert batch is not None
+        assert tensor.shape[0] == batch.bs
+        return tensor.transpose(0, 1).contiguous()
 
-
+    def bs_to_first_dimension(self, tensor, batch=None):
+        assert batch is not None
+        assert tensor.shape[1] == batch.bs
+        return tensor.transpose(0, 1).contiguous()
 
 
 

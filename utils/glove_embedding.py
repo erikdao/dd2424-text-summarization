@@ -1,6 +1,7 @@
 from preprocess.glove import *
 import torch
 import torch.nn as nn
+import math
 
 class GloveEmbedding():
     def __init__(self, embeddings, word_emb_size, w2i):
@@ -12,4 +13,4 @@ class GloveEmbedding():
         self.word_emb.weight = nn.Parameter(torch.from_numpy(embeddings), requires_grad=False)
 
     def forward(self, idxs):
-        return self.word_emb(idxs)
+        return self.word_emb(idxs) * math.sqrt(self.word_emb_size)

@@ -31,9 +31,9 @@ def main():
 
     inputs = mappings['inputs']
     labels = mappings['labels']
-    mappings_train = {'inputs': inputs[:4], 'labels': labels[:4]}
-    mappings_val = {'inputs': inputs[4:6], 'labels': labels[4:6]}
-    mappings_test = {'inputs': inputs[6:8], 'labels': labels[6:8]}
+    mappings_train = {'inputs': inputs[:128], 'labels': labels[:128]}
+    mappings_val = {'inputs': inputs[128:256], 'labels': labels[128:256]}
+    mappings_test = {'inputs': inputs[256:384], 'labels': labels[256:384]}
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
@@ -41,7 +41,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 2,
+        batch_size = 128,
         shuffle=True
     )
     print("Loading val loader...")
@@ -50,7 +50,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 2,
+        batch_size = 128,
         shuffle=True
     )
     print("Loading test loader...")
@@ -63,6 +63,7 @@ def main():
         shuffle=True
     )
 
+    # https://pytorch.org/tutorials/beginner/translation_transformer.html
     print("Init. model...")
     transformer = SummaryTransformer(
         vocab_size=len(word2index.keys()),
@@ -106,17 +107,25 @@ def main():
             #tgt_input = tgt[:-1, :]
             tgt_input = tgt
             src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input, device)
-            logits = transformer(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, src_padding_mask)
+            #print("src_mask")
+            #print(src_mask)
 
+            logits = transformer(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, src_padding_mask)
+            #print("logits")
+            #print(logits)
             optimizer.zero_grad()
 
             #tgt_out = tgt[1:,:]
             tgt_out = tgt
             loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
+            print(f"loss = {loss}")
+            #loss = loss_fn(logits, tgt_out)
+            print("back prop...")
             loss.backward()
 
             optimizer.step()
             losses += loss.item()
+            print(f"loss = {losses}\r", end="")
 
         avg_train_loss = losses / len(train_loader)
         ######### VAL #############
