@@ -45,7 +45,7 @@ def tokenize(
 
 
 def main():
-    glove = vocab.GloVe(name="6B", dim=50)
+    glove = vocab.GloVe(name="6B", dim=config.EMBEDDING_DIM)
     print(glove.vectors.size())
     glove = extend_glove(glove)
     print(config.PAD_TOKEN, glove.stoi["<PAD>"])

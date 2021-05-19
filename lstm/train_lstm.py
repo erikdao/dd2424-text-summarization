@@ -30,13 +30,13 @@ def main():
     test_csv = os.path.join(data_dir, "test_dev.csv")
 
     logger.info("Loading train data...")
-    train_loader = create_dataloader(csv_file=train_csv, shuffle=True)
+    train_loader = create_dataloader(csv_file=train_csv, shuffle=True, batch_size=config.BATCH_SIZE)
 
     logger.info("Loading val data...")
-    val_loader = create_dataloader(csv_file=val_csv, shuffle=False)
+    val_loader = create_dataloader(csv_file=val_csv, shuffle=False, batch_size=config.BATCH_SIZE)
 
     logger.info("Loading test data...")
-    test_loader = create_dataloader(csv_file=test_csv, shuffle=False)
+    test_loader = create_dataloader(csv_file=test_csv, shuffle=False, batch_size=config.BATCH_SIZE)
 
     vocab_size = len(glove.stoi.keys())
     model = LSTMSummary(
