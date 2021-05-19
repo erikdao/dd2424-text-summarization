@@ -2,7 +2,7 @@ import typing
 import torch
 import torchtext.vocab as vocab
 
-from config import config
+from lstm.config import config
 
 
 def extend_glove(glove):

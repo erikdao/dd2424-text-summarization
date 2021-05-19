@@ -3,11 +3,10 @@ Main entry to train LSTM summary model
 """
 import os
 import typing
+import pickle
 
-import torchtext.vocab as vocab
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 pl.seed_everything(1, workers=True)
 
@@ -16,12 +15,31 @@ from model_v2 import LSTMSummary
 from dataloader import create_dataloader
 from config import config
 
-from glove import extend_glove
-
-glove = extend_glove(vocab.GloVe(name="6B", dim=50))
+from ..utils.glove_embedding import load_glove_embeddings
 
 
-def main():
+def pickle_load(filename: str) -> typing.Any:
+    "Load python object from a pickle file"
+    with open(filename, "rb") as handle:
+        return pickle.load(handle)
+
+
+def main_v2():
+    """New experiments with new padded tokens"""
+    # Figure out the path to data
+    data_dir = os.path.join(os.path.dirname(os.getcwd()), "data")
+    logger.info("Loading mappings...")
+    mappings = pickle_load(os.path.join(data_dir, "tokenized-padded"))
+
+    logger.info("Loading word2index...")
+    word2index = pickle_load(os.path.join(data_dir, "word2index"))
+
+    import pdb
+
+    pdb.set_trace()
+
+
+def main_v1():
     data_dir = os.path.join(
         os.path.dirname(os.getcwd()), "data", "amazon-product-reviews"
     )
@@ -30,13 +48,19 @@ def main():
     test_csv = os.path.join(data_dir, "test_dev.csv")
 
     logger.info("Loading train data...")
-    train_loader = create_dataloader(csv_file=train_csv, shuffle=True, batch_size=config.BATCH_SIZE)
+    train_loader = create_dataloader(
+        csv_file=train_csv, shuffle=True, batch_size=config.BATCH_SIZE
+    )
 
     logger.info("Loading val data...")
-    val_loader = create_dataloader(csv_file=val_csv, shuffle=False, batch_size=config.BATCH_SIZE)
+    val_loader = create_dataloader(
+        csv_file=val_csv, shuffle=False, batch_size=config.BATCH_SIZE
+    )
 
     logger.info("Loading test data...")
-    test_loader = create_dataloader(csv_file=test_csv, shuffle=False, batch_size=config.BATCH_SIZE)
+    test_loader = create_dataloader(
+        csv_file=test_csv, shuffle=False, batch_size=config.BATCH_SIZE
+    )
 
     vocab_size = len(glove.stoi.keys())
     model = LSTMSummary(
@@ -63,4 +87,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main_v2()

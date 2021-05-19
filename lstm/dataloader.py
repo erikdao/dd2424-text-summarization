@@ -11,8 +11,8 @@ import torchtext.vocab as vocab
 from torchtext.data import get_tokenizer
 from torch.utils import data as data_utils
 
-from config import config
-from glove import extend_glove
+from lstm.config import config
+from lstm.glove import extend_glove
 
 
 class GloveEmbeddingTransform(object):

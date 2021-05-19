@@ -110,6 +110,9 @@ ENV/
 .vscode
 Reviews.csv
 data/glove.6B
+data/tokenized
+data/tokenized-padded
+data/word2index
 glove6B
 preprocess/glove.6B.50d.txt
 

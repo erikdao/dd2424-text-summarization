@@ -60,7 +60,7 @@ def main():
 
     inputs = mappings['inputs']
     labels = mappings['labels']
-    mappings_train = {'inputs': inputs[:20], 'labels': labels[:20]}
+    mappings_train = {'inputs': inputs[:40], 'labels': labels[:20]}
     mappings_val = {'inputs': inputs[20:40], 'labels': labels[20:40]}
     mappings_test = {'inputs': inputs[40:60], 'labels': labels[40:60]}
 

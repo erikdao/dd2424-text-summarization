@@ -3,8 +3,9 @@ from dataload.dataloader import *
 
 from utils.glove_embedding import *
 
-EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
+EMBEDDING_FILE = "../preprocess/glove.6B.50d.txt"
 EMBEDDING_SIZE = 50
+
 
 def main():
     input_dir_tok = "./tokenized-padded"
@@ -21,22 +22,23 @@ def main():
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
-        mappings = mappings,
-        word2index = word2index,
-        embed_file = EMBEDDING_FILE,
-        batch_size = 100,
-        shuffle=True
+        mappings=mappings,
+        word2index=word2index,
+        embed_file=EMBEDDING_FILE,
+        batch_size=100,
+        shuffle=True,
     )
     for idx, data in enumerate(train_loader):
-        input_vec = data['input'] # indecies
+        input_vec = data["input"]  # indecies
         in_emb = glove_embedding.forward(input_vec)
-        
-        label_vec = data['label']
+
+        label_vec = data["label"]
         print(input_vec, input_vec.shape)
         print(label_vec, label_vec.shape)
         print(in_emb.shape)
         if idx > 2:
             break
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
