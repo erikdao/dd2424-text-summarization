@@ -13,23 +13,24 @@ from torch.utils import data as data_utils
 from preprocess.glove import *
 from utils.pickle import *
 
-MAX_SENTENCE_LEN = 128
-
 class ReviewDatasetGlove(data_utils.Dataset):
     """
     Class to present the Review Dataset
     using Glove Embeddings
     """
-    def __init__(self, mappings, w2i, embed_file, transform=None) :
+    def __init__(self, mappings, w2i, embeddings, word_emb_size, transform=None) :
         self.w2i = w2i
         self.mappings = mappings
-        self.embed_dim, self.embeddings = load_glove_embeddings(embed_file)
+        self.embeddings = embeddings
+        self.embed_dim = word_emb_size
+        
         inputs = mappings['inputs']
         labels = mappings['labels']
         inputs_idxs = [[toktup[1] for toktup in in_sentence] for in_sentence in inputs]
-        inputs_idxs = torch.IntTensor(inputs_idxs) 
+        
+        inputs_idxs = torch.IntTensor(inputs_idxs)
         label_idxs = [[toktup[1] for toktup in in_sentence] for in_sentence in labels]    
-        label_idxs = torch.IntTensor(label_idxs) 
+        label_idxs = torch.LongTensor(label_idxs) 
         self.n_points, self.max_len = label_idxs.shape
         self.data = {"inputs": inputs_idxs, "labels": label_idxs}
         self.transform = transform
@@ -54,7 +55,7 @@ class ReviewDatasetGlove(data_utils.Dataset):
 
         return sample
 
-def create_dataloader_glove(mappings, word2index, embed_file, batch_size = 100, 
+def create_dataloader_glove(mappings, word2index, embeddings,word_emb_size, batch_size = 100, 
         shuffle = True):
     """
     Create data loader that returns data as torch IntTensor with glvoe indexes
@@ -64,7 +65,8 @@ def create_dataloader_glove(mappings, word2index, embed_file, batch_size = 100,
     dataset = ReviewDatasetGlove(
         mappings = mappings,
         w2i = word2index,
-        embed_file = embed_file,
+        embeddings = embeddings,
+        word_emb_size=word_emb_size,
         transform=None
     )
     loader = data_utils.DataLoader(

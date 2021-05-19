@@ -59,12 +59,11 @@ def tokenize_data(inputs, labels, word2index):
             mappings['inputs'].append(in_sen_idxs)
 
             lab_sen = lab_sen.lower()
-            lab_sen.lower()
             lab_sen = [tok.text for tok in lang_model.tokenizer(lab_sen) if tok.text not in punctuation] 
             lab_sen_idxs = [(tok, word2index.get(tok, 1)) for tok in lab_sen] 
-            mappings['labels'].append(in_sen_idxs)
+            mappings['labels'].append(lab_sen_idxs)
             n_valid_points += 1
-
+    
     return mappings, n_valid_points
 
 

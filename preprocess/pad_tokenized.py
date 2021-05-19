@@ -14,25 +14,32 @@ def main():
 
     n_points = len(mappings["inputs"])
     pad = '<PAD>'
+    sos = '<SOS>'
+    eos = '<EOS>'
 
     print("Padding sentences...")
     for i in tqdm(range(n_points)):
         in_sent = mappings["inputs"][i]
         lab_sent = mappings["labels"][i]
+        
+        if len(in_sent) > MAX_SENTENCE_LEN-2:
+            in_sent = in_sent[:MAX_SENTENCE_LEN-2]
+        if len(lab_sent) > MAX_SENTENCE_LEN-2:
+            lab_sent = lab_sent[:MAX_SENTENCE_LEN-2]
+        # insert sos and eos
+        in_sent = [(sos,2)] + in_sent + [(eos,3)]
+        lab_sent = [(sos,2)] + lab_sent + [(eos,3)]
+
         while len(in_sent) < MAX_SENTENCE_LEN:
             in_sent.append((pad, 0))
         while len(lab_sent) < MAX_SENTENCE_LEN:
             lab_sent.append((pad, 0))
-        if len(in_sent) > MAX_SENTENCE_LEN:
-            in_sent = in_sent[:MAX_SENTENCE_LEN]
-        if len(lab_sent) > MAX_SENTENCE_LEN:
-            lab_sent = lab_sent[:MAX_SENTENCE_LEN]
         
-        assert len(in_sent) == MAX_SENTENCE_LEN
-        assert len(lab_sent) == MAX_SENTENCE_LEN
-
         mappings["inputs"][i] = in_sent
         mappings["labels"][i] = lab_sent
+
+        assert len(in_sent) == MAX_SENTENCE_LEN
+        assert len(lab_sent) == MAX_SENTENCE_LEN
 
     print("Saving padded mappings...")
     pickle_save("./tokenized-padded", mappings) 
