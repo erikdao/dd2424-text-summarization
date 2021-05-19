@@ -7,10 +7,10 @@ from transformer.transformer_model import *
 
 EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
-SAVE_EPOCHS = 5
-EPOCHS = 6
-HEADS = 5 # default = 8
-N = 3 # default = 6
+SAVE_EPOCHS = 2
+EPOCHS = 40
+HEADS = 8 # default = 8
+N = 6 # default = 6
 DIMFORWARD = 512
 
 def load_checkpoint(model, optimizer, filename='transformer_model'):
@@ -60,9 +60,9 @@ def main():
 
     inputs = mappings['inputs']
     labels = mappings['labels']
-    mappings_train = {'inputs': inputs[:20], 'labels': labels[:20]}
-    mappings_val = {'inputs': inputs[20:40], 'labels': labels[20:40]}
-    mappings_test = {'inputs': inputs[40:60], 'labels': labels[40:60]}
+    mappings_train = {'inputs': inputs[:327200], 'labels': labels[:327200]}
+    mappings_val = {'inputs': inputs[327200:327200+40900], 'labels': labels[327200:327200+40900]}
+    mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'labels': labels[327200+40900:327200+2*40900]}
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
@@ -70,7 +70,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 10,
+        batch_size = 100,
         shuffle=True
     )
     print("Loading val loader...")
@@ -79,7 +79,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 10,
+        batch_size = 100,
         shuffle=True
     )
     print("Loading test loader...")
@@ -88,7 +88,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 10,
+        batch_size = 100,
         shuffle=True
     )
 
@@ -143,11 +143,11 @@ def main():
 
             #tgt_input = tgt[:-1, :]
             tgt_input = tgt
-            src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input, device)
+            src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask = create_mask(src, tgt_input, device)
             #print("src_mask")
             #print(src_mask)
 
-            logits = transformer(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask)
+            logits = transformer(src, tgt_input, src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask)
             # change batch and sequence dim back
             # print()
             # print("logits")

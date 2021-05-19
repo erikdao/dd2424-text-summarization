@@ -3,6 +3,12 @@
     - "*.py"
     - "*.h5"
   operations:
+    generate-transformer:
+      main: transformer.generate
+      flags-import: all
+      requires:
+        - tokenized
+        - tokenized-padded
     train-transformer:
       main: transformer.train
       flags-import: all

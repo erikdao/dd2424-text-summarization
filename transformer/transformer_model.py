@@ -46,6 +46,7 @@ class SummaryTransformer(nn.Module):
         self.transformer_decoder = TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
     
         self.generator = nn.Linear(d_model, vocab_size)
+    
 
     def forward(self, src, tgt, src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask):
         batch_size = src.shape[0]
@@ -90,11 +91,24 @@ class SummaryTransformer(nn.Module):
         #print("generate output...")
         return self.generator(outs)
 
-    def encode(self, src, src_mask):
-        return self.transformer_encoder(self.positional_encoding(self.embed_src(src)), src_mask)
+    
+    def encode(self, src, src_key_padding_mask, DEVICE):
+        batch_size = src.shape[0]
+        src_emb = self.embed_src.forward(src)
+        src_emb = self.sequence_to_first_dimension(src_emb, batch_size)
+        src_emb = self.pos_enc(src_emb)
+        memory = self.transformer_encoder(src_emb, mask=None, src_key_padding_mask=src_key_padding_mask)
+        return memory
+    
+    def decode(self, tgt, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask):
+        batch_size = tgt.shape[0] 
+        tgt_emb = self.embed_tgt.forward(tgt)
+        tgt_emb = self.sequence_to_first_dimension(tgt_emb, batch_size)
+        tgt_emb = self.pos_enc(tgt_emb)
+        outs = self.transformer_decoder(tgt=tgt_emb, memory=memory, tgt_mask=tgt_attention_mask, memory_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
+        return self.generator(outs)
 
-    def decode(self, tgt, memory, tgt_mask):
-        return self.transformer_decoder(self.positional_encoding(self.embed_tgt(tgt)), memory, tgt_mask)
+
 
     def sequence_to_first_dimension(self, tensor, batch_size=None):
         assert batch_size is not None
@@ -119,9 +133,21 @@ def create_mask(src, tgt, DEVICE):
     src_seq_len = src.shape[1]
     tgt_seq_len = tgt.shape[1]
 
-    tgt_attention_mask = generate_square_subsequent_mask(tgt_seq_len, DEVICE)
+    tgt_attention_mask = generate_square_subsequent_mask(tgt_seq_len, device=DEVICE)
     src_attention_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
 
     src_padding_mask = (src == 0)#.transpose(0, 1)
     tgt_padding_mask = (tgt == 0)#.transpose(0, 1)
     return src_attention_mask, tgt_attention_mask, src_padding_mask, tgt_padding_mask
+
+def create_src_masks(src, DEVICE):
+    src_seq_len = src.shape[1]
+    src_attention_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
+    src_key_padding_mask = (src == 0)
+    return src_attention_mask, src_key_padding_mask
+
+def create_tgt_masks(tgt, DEVICE):
+    tgt_seq_len = tgt.shape[1]
+    tgt_attention_mask = generate_square_subsequent_mask(tgt_seq_len, DEVICE)
+    tgt_key_padding_mask = (tgt == 0)
+    return tgt_attention_mask, tgt_key_padding_mask
