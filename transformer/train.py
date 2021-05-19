@@ -31,9 +31,9 @@ def main():
 
     inputs = mappings['inputs']
     labels = mappings['labels']
-    mappings_train = {'inputs': inputs[:128], 'labels': labels[:128]}
-    mappings_val = {'inputs': inputs[128:256], 'labels': labels[128:256]}
-    mappings_test = {'inputs': inputs[256:384], 'labels': labels[256:384]}
+    mappings_train = {'inputs': inputs[:20], 'labels': labels[:20]}
+    mappings_val = {'inputs': inputs[20:40], 'labels': labels[20:40]}
+    mappings_test = {'inputs': inputs[40:60], 'labels': labels[40:60]}
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
@@ -41,7 +41,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 128,
+        batch_size = 10,
         shuffle=True
     )
     print("Loading val loader...")
@@ -50,7 +50,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 128,
+        batch_size = 10,
         shuffle=True
     )
     print("Loading test loader...")
@@ -59,7 +59,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 2,
+        batch_size = 10,
         shuffle=True
     )
 
@@ -95,7 +95,7 @@ def main():
     optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
     #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
 
-    print("start training")
+    print("start training...")
     for epoch in range(EPOCHS):
         transformer.train()
         losses = 0
@@ -104,21 +104,33 @@ def main():
             src = data['input'].to(device) # indecies
             tgt = data['label'].to(device)
             
+
+            # print("input shape")
+            # print(tgt.shape)
+            # print()
+
             #tgt_input = tgt[:-1, :]
             tgt_input = tgt
             src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input, device)
             #print("src_mask")
             #print(src_mask)
 
-            logits = transformer(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, src_padding_mask)
-            #print("logits")
-            #print(logits)
+            logits = transformer(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask)
+            # change batch and sequence dim back
+            # print()
+            # print("logits")
+            # print(logits.shape)
             optimizer.zero_grad()
 
             #tgt_out = tgt[1:,:]
             tgt_out = tgt
-            loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
-            print(f"loss = {loss}")
+            tgt_out = tgt_out.transpose(0, 1).contiguous()
+            # print()
+            # print("tgt_out")
+            # print(tgt_out.shape)
+            #loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
+            loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
+            # print(f"loss = {loss}")
             #loss = loss_fn(logits, tgt_out)
             print("back prop...")
             loss.backward()
@@ -131,16 +143,23 @@ def main():
         ######### VAL #############
         transformer.eval()
         losses = 0
+        print("EVALUATING...")
         for idx, data in enumerate(val_loader): 
             src = data['input'].to(device) # indexes
             tgt = data['label'].to(device)
 
-            tgt_input = tgt[:-1, :]
+            tgt_input = tgt
             src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input, device)
+            #print("src_mask")
+            #print(src_mask)
 
-            logits = transformer(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, src_padding_mask)
-            tgt_out = tgt[1:,:]
-            loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
+            logits = transformer(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask)
+            # change batch and sequence dim back
+            
+            #tgt_out = tgt[1:,:]
+            tgt_out = tgt
+            tgt_out = tgt_out.transpose(0, 1).contiguous()
+            loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
             losses += loss.item()
         avg_val_loss = losses / len(val_loader)
         
@@ -153,4 +172,5 @@ def main():
 
 
 if __name__ == '__main__':
+    np.random.seed(420)
     main()

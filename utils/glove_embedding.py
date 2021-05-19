@@ -11,6 +11,7 @@ class GloveEmbedding():
 
         self.word_emb = nn.Embedding(self.vocabulary_size, self.word_emb_size)
         self.word_emb.weight = nn.Parameter(torch.from_numpy(embeddings), requires_grad=False)
+        # TODO maybe we shouldnt freeze or add a trainable part to it
 
     def forward(self, idxs):
         return self.word_emb(idxs) * math.sqrt(self.word_emb_size)

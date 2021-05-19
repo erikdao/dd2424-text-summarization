@@ -47,19 +47,47 @@ class SummaryTransformer(nn.Module):
     
         self.generator = nn.Linear(d_model, vocab_size)
 
-    def forward(self, src, tgt, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, memory_key_padding_mask):
+    def forward(self, src, tgt, src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask):
+        batch_size = src.shape[0]
         src_emb = self.embed_src.forward((src))
         tgt_emb = self.embed_tgt.forward((tgt))
-        src_emb = self.sequence_to_first_dimension(src_emb)
-        tgt_emb = self.sequence_to_first_dimension(tgt_emb)
+        """
+        print("src_emb")
+        print(src_emb.shape)
+        print("tgt_emb")
+        print(tgt_emb.shape)
+        """
+        src_emb = self.sequence_to_first_dimension(src_emb, batch_size)
+        tgt_emb = self.sequence_to_first_dimension(tgt_emb, batch_size)
+        """
+        print("src_emb transposed")
+        print(src_emb.shape)
+        print("tgt_emb transposed")
+        print(tgt_emb.shape)
+        """
         src_emb = self.pos_enc(src_emb)
         tgt_emb = self.pos_enc(tgt_emb)
+        """
+        print("src_emb + positional")
+        print(src_emb.shape)
+        print("tgt_emb + positional")
+        print(tgt_emb.shape)
+        print()
+        print("check masks")
+        print("src_key_padding_mask")
+        print(src_key_padding_mask.shape)
+        print("tgt_attention_mask")
+        print(tgt_attention_mask.shape)
+        print("src_key_padding_mask")
+        print(src_key_padding_mask.shape)
+        print("tgt_key_padding_mask")
+        print(tgt_key_padding_mask.shape)
+        """
         
-        print("encoding...")
-        memory = self.transformer_encoder(src_emb, src_mask, src_padding_mask)
-        print("decoding...")
-        outs = self.transformer_decoder(tgt_emb, memory, tgt_mask, None, tgt_padding_mask, memory_key_padding_mask)
-        print("generate output...")
+        #print("encoding...")
+        memory = self.transformer_encoder(src_emb, mask=None, src_key_padding_mask=src_key_padding_mask)
+        outs = self.transformer_decoder(tgt=tgt_emb, memory=memory, tgt_mask=tgt_attention_mask, memory_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
+        #print("generate output...")
         return self.generator(outs)
 
     def encode(self, src, src_mask):
@@ -68,14 +96,14 @@ class SummaryTransformer(nn.Module):
     def decode(self, tgt, memory, tgt_mask):
         return self.transformer_decoder(self.positional_encoding(self.embed_tgt(tgt)), memory, tgt_mask)
 
-    def sequence_to_first_dimension(self, tensor, batch=None):
-        assert batch is not None
-        assert tensor.shape[0] == batch.bs
+    def sequence_to_first_dimension(self, tensor, batch_size=None):
+        assert batch_size is not None
+        assert tensor.shape[0] == batch_size
         return tensor.transpose(0, 1).contiguous()
 
-    def bs_to_first_dimension(self, tensor, batch=None):
-        assert batch is not None
-        assert tensor.shape[1] == batch.bs
+    def bs_to_first_dimension(self, tensor, batch_size=None):
+        assert batch_size is not None
+        assert tensor.shape[1] == batch_size
         return tensor.transpose(0, 1).contiguous()
 
 
@@ -88,12 +116,12 @@ def generate_square_subsequent_mask(sz, DEVICE):
     return mask
 
 def create_mask(src, tgt, DEVICE):
-    src_seq_len = src.shape[0]
-    tgt_seq_len = tgt.shape[0]
+    src_seq_len = src.shape[1]
+    tgt_seq_len = tgt.shape[1]
 
-    tgt_mask = generate_square_subsequent_mask(tgt_seq_len, DEVICE)
-    src_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
+    tgt_attention_mask = generate_square_subsequent_mask(tgt_seq_len, DEVICE)
+    src_attention_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
 
-    src_padding_mask = (src == 0).transpose(0, 1)
-    tgt_padding_mask = (tgt == 0).transpose(0, 1)
-    return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
+    src_padding_mask = (src == 0)#.transpose(0, 1)
+    tgt_padding_mask = (tgt == 0)#.transpose(0, 1)
+    return src_attention_mask, tgt_attention_mask, src_padding_mask, tgt_padding_mask
