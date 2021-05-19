@@ -4,6 +4,7 @@ import torchtext.vocab as vocab
 
 from config import config
 
+
 def extend_glove(glove):
     """
     Add <PAD> and <UNK> tokens to glove embedding
@@ -31,14 +32,20 @@ def extend_glove(glove):
 # glove = extend_glove(glove)
 
 
-def tokenize(sentence: typing.Optional[str], tokenizer: typing.Optional[typing.Any]) -> typing.List[typing.Any]:
+def tokenize(
+    sentence: typing.Optional[str], tokenizer: typing.Optional[typing.Any]
+) -> typing.List[typing.Any]:
     sentence = sentence.strip().lower().replace("\n", "")
-    punctuation = ['(', ')', ':', '"', ' ']
-    return [tok for tok in tokenizer(sentence) if (not tok.isspace() and tok not in punctuation)]
+    punctuation = ["(", ")", ":", '"', " "]
+    return [
+        tok
+        for tok in tokenizer(sentence)
+        if (not tok.isspace() and tok not in punctuation)
+    ]
 
 
 def main():
-    glove = vocab.GloVe(name='6B', dim=50)
+    glove = vocab.GloVe(name="6B", dim=50)
     print(glove.vectors.size())
     glove = extend_glove(glove)
     print(config.PAD_TOKEN, glove.stoi["<PAD>"])
@@ -46,6 +53,5 @@ def main():
     print(glove.vectors.size())
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

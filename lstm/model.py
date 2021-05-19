@@ -25,25 +25,32 @@ class Encoder(nn.Module):
     """
     The Encoder is a bidirectional LSTM
     """
-    def __init__(self,
-        embeddings: typing.Optional[typing.Any], embedding_dim: typing.Optional[int], word2index: typing.Optional[typing.Any],
-        encoder_hidden_dim: typing.Optional[int], decoder_hidden_dim: typing.Optional[int],
-        dropout: typing.Optional[float] = 0.5
+
+    def __init__(
+        self,
+        embeddings: typing.Optional[typing.Any],
+        embedding_dim: typing.Optional[int],
+        word2index: typing.Optional[typing.Any],
+        encoder_hidden_dim: typing.Optional[int],
+        decoder_hidden_dim: typing.Optional[int],
+        dropout: typing.Optional[float] = 0.5,
     ):
 
         super().__init__()
 
         self.embedding = GloveEmbedding(embeddings, embedding_dim, word2index)
         # batch_first = True, as the dim of self.embedding is [batch_size, sentence_length, embedding_dim]
-        self.lstm = nn.LSTM(embedding_dim, encoder_hidden_dim, batch_first=True, bidirectional=True)
+        self.lstm = nn.LSTM(
+            embedding_dim, encoder_hidden_dim, batch_first=True, bidirectional=True
+        )
         self.fc = nn.Linear(encoder_hidden_dim * 2, decoder_hidden_dim)
 
         self.dropout = nn.Dropout(p=dropout)
 
         for name, param in self.named_parameters():
-            if 'weight' in name:
+            if "weight" in name:
                 torch.nn.init.xavier_uniform_(param)
-            if 'bias' in name:
+            if "bias" in name:
                 torch.nn.init.constant_(param, 0.0)
 
     def forward(self, text):
@@ -72,7 +79,10 @@ class Attention(nn.Module):
     Attention mechanism takes encoder hidden state and decoder hidden state, scores
     them and returns a context vector
     """
-    def __init__(self, enc_hid_dim: typing.Optional[int], dec_hid_dim: typing.Optional[int]):
+
+    def __init__(
+        self, enc_hid_dim: typing.Optional[int], dec_hid_dim: typing.Optional[int]
+    ):
         super().__init__()
         self.attn = nn.Linear((enc_hid_dim * 2) + dec_hid_dim, dec_hid_dim)
         self.v = nn.Linear(dec_hid_dim, 1, bias=False)
@@ -96,7 +106,9 @@ class Decoder(nn.Module):
     """
     The Decoder is a single LSTM
     """
-    def __init__(self,
+
+    def __init__(
+        self,
         embeddings: typing.Optional[typing.Any],
         word2index: typing.Optional[typing.Any],
         output_dim: typing.Optional[int],
@@ -112,25 +124,35 @@ class Decoder(nn.Module):
         # self.attention = attention
 
         self.embedding = GloveEmbedding(embeddings, embedding_dim, word2index)
-        self.lstm = nn.LSTM((encoder_hidden_dim * 2) + embedding_dim, decocder_hidden_dim, batch_first=True)
-        self.fc_out = nn.Linear((encoder_hidden_dim * 2) + decocder_hidden_dim + embedding_dim, output_dim)
+        self.lstm = nn.LSTM(
+            (encoder_hidden_dim * 2) + embedding_dim,
+            decocder_hidden_dim,
+            batch_first=True,
+        )
+        self.fc_out = nn.Linear(
+            (encoder_hidden_dim * 2) + decocder_hidden_dim + embedding_dim, output_dim
+        )
 
         self.dropout = nn.Dropout(dropout)
 
         for name, param in self.named_parameters():
-            if 'weight' in name:
+            if "weight" in name:
                 torch.nn.init.xavier_uniform_(param)
-            if 'bias' in name:
+            if "bias" in name:
                 torch.nn.init.constant_(param, 0.0)
 
     def forward(self, input, hidden):
         embedded = self.dropout(self.embedding.forward(input))
-        output, (hidden, _) = self.lstm(embedded.unsqueeze(1), (hidden.unsqueeze(0), hidden.unsqueeze(0)))
+        output, (hidden, _) = self.lstm(
+            embedded.unsqueeze(1), (hidden.unsqueeze(0), hidden.unsqueeze(0))
+        )
 
         embedded = embedded.squeeze(0)
         output = output.squeeze(0)
         pred = self.fc_out(torch.cat((output, embedded), dim=1))
-        import pdb; pdb.set_trace();
+        import pdb
+
+        pdb.set_trace()
 
         return pred, hidden.squeeze(0)
 
@@ -139,7 +161,9 @@ class LSTMSummary(pl.LightningModule):
     """
     Text Summarization model based on bidrectional LSTM encoder-decoder
     """
-    def __init__(self,
+
+    def __init__(
+        self,
         vocab_size: typing.Optional[int],
         input_dim: typing.Optional[int],
         output_dim: typing.Optional[int],
@@ -148,18 +172,24 @@ class LSTMSummary(pl.LightningModule):
         decoder_hidden_dim: typing.Optional[int],
         encoder_dropout: typing.Optional[float] = 0.5,
         decoder_dropout: typing.Optional[float] = 0.5,
-        text_pad_idx: typing.Optional[typing.Any] = None
+        text_pad_idx: typing.Optional[typing.Any] = None,
     ):
         super().__init__()
 
         self.encoder = Encoder(
-            input_dim, encoder_hidden_dim, encoder_hidden_dim,
-            decoder_hidden_dim, encoder_dropout
+            input_dim,
+            encoder_hidden_dim,
+            encoder_hidden_dim,
+            decoder_hidden_dim,
+            encoder_dropout,
         )
         self.attention = Attention(encoder_hidden_dim, decoder_hidden_dim)
         self.decoder = Decoder(
-            output_dim, embedding_dim, encoder_hidden_dim, decoder_hidden_dim,
-            decoder_dropout
+            output_dim,
+            embedding_dim,
+            encoder_hidden_dim,
+            decoder_hidden_dim,
+            decoder_dropout,
         )
         self.text_pad_idx = text_pad_idx
 
@@ -167,9 +197,9 @@ class LSTMSummary(pl.LightningModule):
         logger.info("Initializing weights for LSTMSummary...")
 
         for name, param in self.named_parameters():
-            if 'weight' in name:
+            if "weight" in name:
                 torch.nn.init.xavier_uniform_(param)
-            if 'bias' in name:
+            if "bias" in name:
                 torch.nn.init.constant_(param)
 
     def configure_optimizers(self):
