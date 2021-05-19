@@ -6,10 +6,39 @@ from utils.glove_embedding import *
 from transformer.transformer_model import *
 
 EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
-EPOCHS = 2
-HEADS = 2 # default = 8
-N = 2 # default = 6
+SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
+SAVE_EPOCHS = 5
+EPOCHS = 6
+HEADS = 5 # default = 8
+N = 3 # default = 6
 DIMFORWARD = 512
+
+def load_checkpoint(model, optimizer, filename='transformer_model'):
+    # Note: Input model & optimizer should be pre-defined.  This routine only updates their states.
+    if os.path.isfile(filename):
+        print("=> loading checkpoint '{}'".format(filename))
+        checkpoint = torch.load(filename)
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        train_loss = checkpoint['loss']['train_loss']
+        val_loss = checkpoint['loss']['val_loss']
+        load_flag = True
+    else:
+        print("=> no checkpoint found at '{}'".format(filename))
+        load_flag = False
+        train_loss = 0.
+        val_loss = 0.
+    return load_flag, model, optimizer, train_loss, val_loss
+
+def save_checkpoint(transformer, optimizer, train_loss, val_loss):
+    state = {'state_dict': transformer.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'loss': {
+                    'train_loss': train_loss,
+                    'val_loss': val_loss
+                }
+            }
+    torch.save(state, SAVED_MODEL_FILE)
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,6 +94,7 @@ def main():
 
     # https://pytorch.org/tutorials/beginner/translation_transformer.html
     print("Init. model...")
+
     transformer = SummaryTransformer(
         vocab_size=len(word2index.keys()),
         d_model=word_emb_size,
@@ -78,21 +108,23 @@ def main():
         word2index=word2index,
         embeddings=embeddings
     )
-    print("xavier init...")
-    for p in transformer.transformer_encoder.parameters():
-        if p.dim() > 1:
-            nn.init.xavier_uniform_(p)
-    for p in transformer.transformer_decoder.parameters():
-        if p.dim() > 1:
-            nn.init.xavier_uniform_(p)
-    for p in transformer.generator.parameters():
-        if p.dim() > 1:
-            nn.init.xavier_uniform_(p)
+    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.01, betas=(0.9, 0.98), eps=1e-9) # TODO
+    load_flag, transformer, optimizer, train_loss, val_loss = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
+    if not load_flag:    
+        print("xavier init...")
+        for p in transformer.transformer_encoder.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+        for p in transformer.transformer_decoder.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+        for p in transformer.generator.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
     transformer = transformer.to(device)
 
     print("model init completed...")
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
     #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
 
     print("start training...")
@@ -132,18 +164,18 @@ def main():
             loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
             # print(f"loss = {loss}")
             #loss = loss_fn(logits, tgt_out)
-            print("back prop...")
+            #print("back prop...")
             loss.backward()
 
             optimizer.step()
             losses += loss.item()
-            print(f"loss = {losses}\r", end="")
+            #print(f"loss = {losses}\r", end="")
 
         avg_train_loss = losses / len(train_loader)
         ######### VAL #############
         transformer.eval()
         losses = 0
-        print("EVALUATING...")
+        #print("EVALUATING...")
         for idx, data in enumerate(val_loader): 
             src = data['input'].to(device) # indexes
             tgt = data['label'].to(device)
@@ -168,8 +200,10 @@ def main():
         print((f"Epoch: {epoch}, Train loss: {avg_train_loss:.3f}, Val loss: {avg_val_loss:.3f}, "
           f"Epoch time = {(end_time - start_time):.3f}s"))
 
-
-
+        if epoch % SAVE_EPOCHS == 0:
+            save_checkpoint(transformer, optimizer, avg_train_loss, avg_val_loss)
+    # save final outcome
+    save_checkpoint(transformer, optimizer, avg_train_loss, avg_val_loss)        
 
 if __name__ == '__main__':
     np.random.seed(420)
