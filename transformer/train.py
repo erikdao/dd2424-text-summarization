@@ -13,6 +13,7 @@ EPOCHS = 10
 HEADS = 5 # default = 8 have to be dividable by d_model
 N = 3 # default = 6
 DIMFORWARD = 512
+LEARN_RATE = 0.001
 
 def load_checkpoint(model, optimizer, filename='transformer_model'):
     # Note: Input model & optimizer should be pre-defined.  This routine only updates their states.
@@ -61,7 +62,6 @@ def main():
 
     inputs = mappings['inputs']
     labels = mappings['labels']
-    """
     mappings_train = {'inputs': inputs[:327200], 'labels': labels[:327200]}
     mappings_val = {'inputs': inputs[327200:327200+40900], 'labels': labels[327200:327200+40900]}
     mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'labels': labels[327200+40900:327200+2*40900]}
@@ -69,6 +69,7 @@ def main():
     mappings_train = {'inputs': inputs[:1000], 'labels': labels[:1000]}
     mappings_val = {'inputs': inputs[1000:1050], 'labels': labels[1000:1050]}
     mappings_test = {'inputs': inputs[1050:1100], 'labels': labels[1050:1100]}
+    """
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
@@ -114,7 +115,7 @@ def main():
         word2index=word2index,
         embeddings=embeddings
     )
-    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.01, betas=(0.9, 0.98), eps=1e-9) # TODO tune params
+    optimizer = torch.optim.Adam(transformer.parameters(), lr=LEARN_RATE, betas=(0.9, 0.98), eps=1e-9) # TODO tune params
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
     
     load_flag, transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
