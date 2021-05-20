@@ -44,6 +44,7 @@ def save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_e
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("DEVICE: ", device)
 
     input_dir_tok = "./tokenized-padded"
     input_dir_w2i = "./tokenized"
@@ -157,6 +158,10 @@ def main():
             #tgt_input = tgt[:-1, :]
             tgt_input = tgt
             src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask = create_mask(src, tgt_input, device)
+            src_attention_mask = src_attention_mask.to(device)
+            tgt_attention_mask = tgt_attention_mask.to(device)
+            src_key_padding_mask = src_key_padding_mask.to(device)
+            tgt_key_padding_mask = tgt_key_padding_mask.to(device)
             #print("src_mask")
             #print(src_mask)
 

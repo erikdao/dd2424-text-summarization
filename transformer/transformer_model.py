@@ -49,7 +49,10 @@ class SummaryTransformer(nn.Module):
     
 
     def forward(self, src, tgt, src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         batch_size = src.shape[0]
+        src = src.to(device)
+        tgt = tgt.to(device)
         src_emb = self.embed_src.forward((src))
         tgt_emb = self.embed_tgt.forward((tgt))
         """

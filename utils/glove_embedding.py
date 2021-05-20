@@ -14,4 +14,6 @@ class GloveEmbedding():
         # TODO maybe we shouldnt freeze or add a trainable part to it
 
     def forward(self, idxs):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        idxs = idxs.to(device) 
         return self.word_emb(idxs) * math.sqrt(self.word_emb_size)
