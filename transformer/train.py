@@ -9,8 +9,8 @@ EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
 SAVE_EPOCHS = 2
 EPOCHS = 40
-HEADS = 8 # default = 8
-N = 6 # default = 6
+HEADS = 5 # default = 8 have to be dividable by d_model
+N = 3 # default = 6
 DIMFORWARD = 512
 
 def load_checkpoint(model, optimizer, filename='transformer_model'):
@@ -20,22 +20,22 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
         checkpoint = torch.load(filename)
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
-        train_loss = checkpoint['loss']['train_loss']
-        val_loss = checkpoint['loss']['val_loss']
+        train_loss = checkpoint['loss_epoch_history']['train_loss']
+        val_loss = checkpoint['loss_epoch_history']['val_loss']
         load_flag = True
     else:
         print("=> no checkpoint found at '{}'".format(filename))
         load_flag = False
-        train_loss = 0.
-        val_loss = 0.
+        train_loss = []
+        val_loss = []
     return load_flag, model, optimizer, train_loss, val_loss
 
 def save_checkpoint(transformer, optimizer, train_loss, val_loss):
     state = {'state_dict': transformer.state_dict(),
                 'optimizer': optimizer.state_dict(),
-                'loss': {
-                    'train_loss': train_loss,
-                    'val_loss': val_loss
+                'loss_epoch_history': {
+                    'train_loss': train_loss_per_epoch,
+                    'val_loss': val_loss_per_epoch
                 }
             }
     torch.save(state, SAVED_MODEL_FILE)
@@ -70,7 +70,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 100,
+        batch_size = 50,
         shuffle=True
     )
     print("Loading val loader...")
@@ -79,7 +79,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 100,
+        batch_size = 50,
         shuffle=True
     )
     print("Loading test loader...")
@@ -88,7 +88,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 100,
+        batch_size = 50,
         shuffle=True
     )
 
@@ -108,8 +108,10 @@ def main():
         word2index=word2index,
         embeddings=embeddings
     )
-    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.01, betas=(0.9, 0.98), eps=1e-9) # TODO
-    load_flag, transformer, optimizer, train_loss, val_loss = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
+    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.01, betas=(0.9, 0.98), eps=1e-9) # TODO tune params
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
+    
+    load_flag, transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
     if not load_flag:    
         print("xavier init...")
         for p in transformer.transformer_encoder.parameters():
@@ -121,11 +123,15 @@ def main():
         for p in transformer.generator.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
+        print("init loss histories")
+        train_loss_per_epoch = []
+        val_loss_per_epoch = []
+
     transformer = transformer.to(device)
 
     print("model init completed...")
     loss_fn = nn.CrossEntropyLoss()
-    #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
+    
 
     print("start training...")
     for epoch in range(EPOCHS):
@@ -203,6 +209,8 @@ def main():
         if epoch % SAVE_EPOCHS == 0:
             save_checkpoint(transformer, optimizer, avg_train_loss, avg_val_loss)
     # save final outcome
+    train_loss_per_epoch.append(avg_train_loss)
+    val_loss_per_epoch.append(avg_val_loss)
     save_checkpoint(transformer, optimizer, avg_train_loss, avg_val_loss)        
 
 if __name__ == '__main__':

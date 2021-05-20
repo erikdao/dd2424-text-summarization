@@ -133,7 +133,7 @@ def create_mask(src, tgt, DEVICE):
     src_seq_len = src.shape[1]
     tgt_seq_len = tgt.shape[1]
 
-    tgt_attention_mask = generate_square_subsequent_mask(tgt_seq_len, device=DEVICE)
+    tgt_attention_mask = generate_square_subsequent_mask(tgt_seq_len, DEVICE=DEVICE)
     src_attention_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
 
     src_padding_mask = (src == 0)#.transpose(0, 1)
