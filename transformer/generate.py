@@ -34,6 +34,7 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    torch.cuda.empty_cache()
     
     input_dir_tok = "./tokenized-padded"
     input_dir_w2i = "./tokenized"
