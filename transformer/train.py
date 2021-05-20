@@ -115,7 +115,7 @@ def main():
         trans_dropout=0.1, 
         word2index=word2index,
         embeddings=embeddings
-    )
+    ).to(device)
     optimizer = torch.optim.Adam(transformer.parameters(), lr=LEARN_RATE, betas=(0.9, 0.98), eps=1e-9) # TODO tune params
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
     
