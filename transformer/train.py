@@ -44,6 +44,7 @@ def save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_e
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    torch.use_deterministic_algorithms(False)
     print("DEVICE: ", device)
 
     input_dir_tok = "./tokenized-padded"

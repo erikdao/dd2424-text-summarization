@@ -34,6 +34,7 @@ class SummaryTransformer(nn.Module):
                 word2index,
                 embeddings):
         super().__init__()
+        torch.use_deterministic_algorithms(False)
         self.model_type = 'Transformer'
         self.d_model = d_model
         self.embed_src = GloveEmbedding(embeddings, d_model, word2index)
@@ -50,6 +51,7 @@ class SummaryTransformer(nn.Module):
 
     def forward(self, src, tgt, src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        torch.use_deterministic_algorithms(False)
         batch_size = src.shape[0]
         src = src.to(device)
         tgt = tgt.to(device)
