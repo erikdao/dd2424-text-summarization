@@ -34,7 +34,6 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     
     input_dir_tok = "./tokenized-padded"
     input_dir_w2i = "./tokenized"
@@ -57,10 +56,13 @@ def main():
     
     inputs = mappings['inputs']
     labels = mappings['labels']
+    """
     mappings_train = {'inputs': inputs[:2*BATCH_SIZE], 'labels': labels[:2*BATCH_SIZE]}
     mappings_val = {'inputs': inputs[2*BATCH_SIZE:4*BATCH_SIZE], 'labels': labels[2*BATCH_SIZE:4*BATCH_SIZE]}
+    """
     mappings_test = {'inputs': inputs[4*BATCH_SIZE:6*BATCH_SIZE], 'labels': labels[4*BATCH_SIZE:6*BATCH_SIZE]}
 
+    """
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
         mappings = mappings_train,
@@ -79,6 +81,7 @@ def main():
         batch_size = BATCH_SIZE,
         shuffle=True
     )
+    """
     print("Loading test loader...")
     test_loader = create_dataloader_glove(
         mappings = mappings_test,
@@ -104,7 +107,7 @@ def main():
         trans_dropout=0.1, 
         word2index=word2index,
         embeddings=embeddings
-    )
+    ).to(device)
     optimizer = torch.optim.Adam(transformer.parameters(), lr=0.01, betas=(0.9, 0.98), eps=1e-9) # TODO
     load_flag, transformer, optimizer, train_loss, val_loss = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
     if not load_flag:
@@ -133,12 +136,12 @@ def main():
     
     
     trg_init_tok = sos_idx
-    trg = torch.LongTensor([[trg_init_tok]  + [0 for p in range(src.shape[1] - 1)]])
+    trg = torch.LongTensor([[trg_init_tok]  + [0 for p in range(src.shape[1] - 1)]]).to(device)
 
 
     # encoding once
     src_attention_mask, src_key_padding_mask = create_src_masks(src, device)
-    memory = transformer.encode(src, src_key_padding_mask, device)
+    memory = transformer.encode(src, src_key_padding_mask, device).to(device)
     
     translated_sentence = ""
     maxlen = 25
@@ -149,7 +152,7 @@ def main():
         print(trg.shape)
         tgt_attention_mask, tgt_key_padding_mask = create_tgt_masks(trg, device)
         
-        pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask)
+        pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask).to(device)
         pred = pred.transpose(0, 1).contiguous()
         print(pred.shape)
         print(pred)
