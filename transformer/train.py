@@ -15,6 +15,7 @@ N = 3 # default = 6
 DIMFORWARD = 512
 LEARN_RATE = 0.001
 BATCH_SIZE = 10
+TEST = False
 
 def load_checkpoint(model, optimizer, filename='transformer_model'):
     # Note: Input model & optimizer should be pre-defined.  This routine only updates their states.
@@ -66,14 +67,15 @@ def main():
 
     inputs = mappings['inputs']
     labels = mappings['labels']
-    mappings_train = {'inputs': inputs[:327200], 'labels': labels[:327200]}
-    mappings_val = {'inputs': inputs[327200:327200+40900], 'labels': labels[327200:327200+40900]}
-    mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'labels': labels[327200+40900:327200+2*40900]}
-    """
-    mappings_train = {'inputs': inputs[:1000], 'labels': labels[:1000]}
-    mappings_val = {'inputs': inputs[1000:1050], 'labels': labels[1000:1050]}
-    mappings_test = {'inputs': inputs[1050:1100], 'labels': labels[1050:1100]}
-    """
+
+    if not Test:
+        mappings_train = {'inputs': inputs[:327200], 'labels': labels[:327200]}
+        mappings_val = {'inputs': inputs[327200:327200+40900], 'labels': labels[327200:327200+40900]}
+        mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'labels': labels[327200+40900:327200+2*40900]}
+    else:
+        mappings_train = {'inputs': inputs[:1000], 'labels': labels[:1000]}
+        mappings_val = {'inputs': inputs[1000:1050], 'labels': labels[1000:1050]}
+        mappings_test = {'inputs': inputs[1050:1100], 'labels': labels[1050:1100]}
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
