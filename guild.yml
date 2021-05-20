@@ -9,6 +9,9 @@
       requires:
         - tokenized
         - tokenized-padded
+    plot-train-transformer:
+      main: transformer.plot_train
+      flags-import: all
     train-transformer:
       main: transformer.train
       flags-import: all
