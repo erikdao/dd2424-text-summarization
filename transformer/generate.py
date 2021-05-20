@@ -138,7 +138,7 @@ def main():
 
     # encoding once
     src_attention_mask, src_key_padding_mask = create_src_masks(src, device)
-    memory = transformer.encode(src, src_key_padding_mask, device)
+    memory = transformer.encode(src, src_key_padding_mask, device).to(device)
     
     translated_sentence = ""
     maxlen = 25
@@ -149,13 +149,13 @@ def main():
         print(trg.shape)
         tgt_attention_mask, tgt_key_padding_mask = create_tgt_masks(trg, device)
         
-        pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask)
+        pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask).to(device)
         pred = pred.transpose(0, 1).contiguous()
         print(pred.shape)
         print(pred)
         print()
 
-        pred = F.log_softmax(pred, dim=1)
+        pred = F.log_softmax(pred, dim=1).to(device)
         print(pred)
 
         pred_word_idx = int(pred[0,i+1].argmax())
