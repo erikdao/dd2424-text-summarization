@@ -1,14 +1,15 @@
 from utils.pickle import *
 from dataload.dataloader import *
 import time
+from tqdm import tqdm
 
 from utils.glove_embedding import *
 from transformer.transformer_model import *
 
 EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
-SAVE_EPOCHS = 2
-EPOCHS = 40
+SAVE_EPOCHS = 1
+EPOCHS = 10
 HEADS = 5 # default = 8 have to be dividable by d_model
 N = 3 # default = 6
 DIMFORWARD = 512
@@ -30,7 +31,7 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
         val_loss = []
     return load_flag, model, optimizer, train_loss, val_loss
 
-def save_checkpoint(transformer, optimizer, train_loss, val_loss):
+def save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch):
     state = {'state_dict': transformer.state_dict(),
                 'optimizer': optimizer.state_dict(),
                 'loss_epoch_history': {
@@ -60,9 +61,14 @@ def main():
 
     inputs = mappings['inputs']
     labels = mappings['labels']
+    """
     mappings_train = {'inputs': inputs[:327200], 'labels': labels[:327200]}
     mappings_val = {'inputs': inputs[327200:327200+40900], 'labels': labels[327200:327200+40900]}
     mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'labels': labels[327200+40900:327200+2*40900]}
+    """
+    mappings_train = {'inputs': inputs[:1000], 'labels': labels[:1000]}
+    mappings_val = {'inputs': inputs[1000:1050], 'labels': labels[1000:1050]}
+    mappings_test = {'inputs': inputs[1050:1100], 'labels': labels[1050:1100]}
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
@@ -70,7 +76,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 50,
+        batch_size = 10,
         shuffle=True
     )
     print("Loading val loader...")
@@ -79,7 +85,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 50,
+        batch_size = 10,
         shuffle=True
     )
     print("Loading test loader...")
@@ -88,7 +94,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 50,
+        batch_size = 10,
         shuffle=True
     )
 
@@ -134,11 +140,11 @@ def main():
     
 
     print("start training...")
-    for epoch in range(EPOCHS):
+    for epoch in tqdm(range(EPOCHS)):
         transformer.train()
         losses = 0
         start_time = time.time()
-        for idx, data in enumerate(train_loader): #batches
+        for idx, data in tqdm(enumerate(train_loader)): #batches
             src = data['input'].to(device) # indecies
             tgt = data['label'].to(device)
             
@@ -207,11 +213,11 @@ def main():
           f"Epoch time = {(end_time - start_time):.3f}s"))
 
         if epoch % SAVE_EPOCHS == 0:
-            save_checkpoint(transformer, optimizer, avg_train_loss, avg_val_loss)
+            save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch)
     # save final outcome
     train_loss_per_epoch.append(avg_train_loss)
     val_loss_per_epoch.append(avg_val_loss)
-    save_checkpoint(transformer, optimizer, avg_train_loss, avg_val_loss)        
+    save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch)        
 
 if __name__ == '__main__':
     np.random.seed(420)
