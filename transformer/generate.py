@@ -158,7 +158,7 @@ def main():
         print(pred)
         print()
 
-        pred = F.log_softmax(pred, dim=1)
+        pred = F.log_softmax(pred, dim=1).to(device)
         print(pred)
 
         pred_word_idx = int(pred[0,i+1].argmax())
