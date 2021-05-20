@@ -68,7 +68,7 @@ def main():
     inputs = mappings['inputs']
     labels = mappings['labels']
 
-    if not Test:
+    if not TEST:
         mappings_train = {'inputs': inputs[:327200], 'labels': labels[:327200]}
         mappings_val = {'inputs': inputs[327200:327200+40900], 'labels': labels[327200:327200+40900]}
         mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'labels': labels[327200+40900:327200+2*40900]}
