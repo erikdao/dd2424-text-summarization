@@ -22,8 +22,8 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
         checkpoint = torch.load(filename)
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
-        train_loss = checkpoint['loss']['train_loss']
-        val_loss = checkpoint['loss']['val_loss']
+        train_loss = checkpoint['loss_epoch_history']['train_loss']
+        val_loss = checkpoint['loss_epoch_history']['val_loss']
         load_flag = True
     else:
         print("=> no checkpoint found at '{}'".format(filename))
