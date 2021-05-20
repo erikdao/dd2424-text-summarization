@@ -149,36 +149,38 @@ def main():
     for i in range(maxlen):
         print("iteration = " + str(i))
 
-        print(trg)
-        print(trg.shape)
+        #print(trg)
+        #print(trg.shape)
         tgt_attention_mask, tgt_key_padding_mask = create_tgt_masks(trg, device)
         
         pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask).to(device)
         pred = pred.transpose(0, 1).contiguous()
-        print(pred.shape)
-        print(pred)
-        print()
+        #print(pred.shape)
+        #print(pred)
+        #print()
 
         pred = F.log_softmax(pred, dim=1).to(device)
-        print(pred)
+        #print(pred)
 
         pred_word_idx = int(pred[0,i+1].argmax())
-        print("max index")
-        print(pred_word_idx)
+        #print("max index")
+        #print(pred_word_idx)
         add_word = index2word[pred_word_idx]
-        print("pred word" + add_word)
+        #print("pred word" + add_word)
         translated_sentence += " " + add_word
         if add_word == "<EOS>":
             trg[0,i+1] = pred_word_idx
             break
 
-        print("concat")
-        print(trg.shape)
-        print(torch.LongTensor([[pred_word_idx]]).shape)
+        #print("concat")
+        #print(trg.shape)
+        #print(torch.LongTensor([[pred_word_idx]]).shape)
         trg[0,i+1] = pred_word_idx
         #trg[i] = torch.cat((trg, torch.LongTensor([[pred_word_idx]])))
         
-    print(translated_sentence)
+    print("\nGENERATED: ")
+    print(translated_sentence, "\n\n")
+    print("REAL: ")
     print(" ".join( [index2word[i] for i in tgt_real[0].tolist()] ))
     
 
