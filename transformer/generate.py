@@ -147,7 +147,7 @@ def main():
     translated_sentence = ""
     maxlen = 25
     for i in range(maxlen):
-        print("iteration = " + str(i))
+        #print("iteration = " + str(i))
 
         #print(trg)
         #print(trg.shape)
@@ -179,7 +179,7 @@ def main():
         #trg[i] = torch.cat((trg, torch.LongTensor([[pred_word_idx]])))
         
     print("\nGENERATED: ")
-    print(translated_sentence, "\n\n")
+    print(translated_sentence)
     print("REAL: ")
     print(" ".join( [index2word[i] for i in tgt_real[0].tolist()] ))
     
