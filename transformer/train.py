@@ -14,6 +14,7 @@ HEADS = 5 # default = 8 have to be dividable by d_model
 N = 3 # default = 6
 DIMFORWARD = 512
 LEARN_RATE = 0.001
+BATCH_SIZE = 10
 
 def load_checkpoint(model, optimizer, filename='transformer_model'):
     # Note: Input model & optimizer should be pre-defined.  This routine only updates their states.
@@ -80,7 +81,7 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 10,
+        batch_size = BATCH_SIZE,
         shuffle=True
     )
     print("Loading val loader...")
@@ -89,9 +90,10 @@ def main():
         word2index = word2index,
         embeddings = embeddings,
         word_emb_size = word_emb_size,
-        batch_size = 10,
+        batch_size = BATCH_SIZE,
         shuffle=True
     )
+    """
     print("Loading test loader...")
     test_loader = create_dataloader_glove(
         mappings = mappings_test,
@@ -101,6 +103,7 @@ def main():
         batch_size = 10,
         shuffle=True
     )
+    """
 
     # https://pytorch.org/tutorials/beginner/translation_transformer.html
     print("Init. model...")
