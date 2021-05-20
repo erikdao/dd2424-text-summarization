@@ -18,6 +18,7 @@ class ReviewDatasetGlove(data_utils.Dataset):
     """
 
     def __init__(self, mappings, w2i, embeddings, word_emb_size, transform=None):
+        super().__init__()
         self.w2i = w2i
         self.mappings = mappings
         self.embeddings = embeddings
@@ -34,8 +35,10 @@ class ReviewDatasetGlove(data_utils.Dataset):
         self.data = {"inputs": inputs_idxs, "labels": label_idxs}
         self.transform = transform
 
+    # def __len__(self):
+    #     return self.n_points
     def __len__(self):
-        return self.n_points
+        return len(self.mappings['inputs'])
 
     def __getitem__(self, idx):
         """

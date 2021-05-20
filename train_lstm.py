@@ -9,13 +9,13 @@ import argparse
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-pl.seed_everything(1, workers=True)
+pl.seed_everything(42, workers=True)
 
 from dataload.dataloader import create_dataloader_glove
 from lstm.config import config
 
 from lstm.logger import logger
-from lstm.model_v2 import LSTMSummary
+from lstm.model import LSTMSummary
 
 from utils.glove_embedding import load_glove_embeddings
 
@@ -37,6 +37,9 @@ def main_v2(args: typing.Any) -> None:
     word2index = pickle_load(os.path.join(data_dir, "word2index"))
     vocab_size = len(word2index.keys())
 
+    logger.info("Creating index2word...")
+    index2word = {v: k for k, v in word2index.items()}
+
     logger.info("Loading GloVe.6B.50d embeddings...")
     embedding_dim, embeddings = load_glove_embeddings(
         os.path.join(data_dir, "glove6B", "glove.6B.50d.txt")
@@ -55,16 +58,18 @@ def main_v2(args: typing.Any) -> None:
     }
 
     if args.dev:  # Development mode, use less data
-        train_mappings = {"inputs": inputs[:8000], "labels": labels[:8000]}
+        train_mappings = {"inputs": inputs[:800], "labels": labels[:800]}
+        logger.debug(f"train_mappings - inputs: {len(train_mappings['inputs'])}; labels: {len(train_mappings['labels'])}")
         val_mappings = {
-            "inputs": inputs[8000 : 8000 + 1000],
-            "labels": labels[8000 : 8000 + 1000],
+            "inputs": inputs[800 : 800 + 100],
+            "labels": labels[800 : 800 + 100],
         }
+        logger.debug(f"val_mappings - inputs: {len(val_mappings['inputs'])}; labels: {len(val_mappings['labels'])}")
         test_mappings = {
-            "inputs": inputs[8000 + 1000 : 8000 + 2 * 1000],
-            "labels": labels[8000 + 1000 : 8000 + 2 * 1000],
+            "inputs": inputs[800 + 100 : 800 + 2 * 100],
+            "labels": labels[800 + 100 : 800 + 2 * 100],
         }
-
+        logger.debug(f"test_mappings - inputs: {len(test_mappings['inputs'])}; labels: {len(test_mappings['labels'])}")
     # Create data loaders
     logger.info("Create training loader...")
     train_loader = create_dataloader_glove(
@@ -100,12 +105,26 @@ def main_v2(args: typing.Any) -> None:
         embedding_size=vocab_size,
         hidden_size=config.HIDDEN_SIZE,
         word2index=word2index,
+        index2word=index2word,
         embeddings=embeddings,
     )
-    
-    data = next(iter(train_loader))
-    model.forward(data["input"])
+    logger.debug(model)
 
+    # Configure checkpoint
+    ckpt_dir = os.path.join(os.getcwd(), "checkpoints")
+    checkpoint_cb = ModelCheckpoint(dirpath=ckpt_dir, monitor="val_loss", mode="min")
+    # earlystopping_cb = EarlyStopping(monitor="val_loss", patience=8)
+    callbacks = [checkpoint_cb]
+
+    trainer = pl.Trainer(
+        gpus=1,
+        max_epochs=config.EPOCHES,
+        # val_check_interval=config.VAL_CHECK_STEP,
+        gradient_clip_val=1.0,
+        callbacks=callbacks,
+        limit_val_batches=0.33
+    )
+    trainer.fit(model, train_loader, val_loader)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

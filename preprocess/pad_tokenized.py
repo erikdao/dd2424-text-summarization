@@ -4,7 +4,8 @@ from tqdm import tqdm
 # average length of sentences are 80 words, some very large with thousands of words
 # about 84 % less than 128 words
 # will truncate longer sentences to MAX_SENTENCE_LEN words
-MAX_SENTENCE_LEN = 128
+MAX_INPUT_LEN = 128
+MAX_OUTPUT_LEN = 32
 
 def main():
     input_dir = "./tokenized"
@@ -22,24 +23,24 @@ def main():
         in_sent = mappings["inputs"][i]
         lab_sent = mappings["labels"][i]
         
-        if len(in_sent) > MAX_SENTENCE_LEN-2:
-            in_sent = in_sent[:MAX_SENTENCE_LEN-2]
-        if len(lab_sent) > MAX_SENTENCE_LEN-2:
-            lab_sent = lab_sent[:MAX_SENTENCE_LEN-2]
+        if len(in_sent) > MAX_INPUT_LEN-2:
+            in_sent = in_sent[:MAX_INPUT_LEN-2]
+        if len(lab_sent) > MAX_OUTPUT_LEN-2:
+            lab_sent = lab_sent[:MAX_OUTPUT_LEN-2]
         # insert sos and eos
         in_sent = [(sos,2)] + in_sent + [(eos,3)]
         lab_sent = [(sos,2)] + lab_sent + [(eos,3)]
 
-        while len(in_sent) < MAX_SENTENCE_LEN:
+        while len(in_sent) < MAX_INPUT_LEN:
             in_sent.append((pad, 0))
-        while len(lab_sent) < MAX_SENTENCE_LEN:
+        while len(lab_sent) < MAX_OUTPUT_LEN:
             lab_sent.append((pad, 0))
         
         mappings["inputs"][i] = in_sent
         mappings["labels"][i] = lab_sent
 
-        assert len(in_sent) == MAX_SENTENCE_LEN
-        assert len(lab_sent) == MAX_SENTENCE_LEN
+        assert len(in_sent) == MAX_INPUT_LEN
+        assert len(lab_sent) == MAX_OUTPUT_LEN
 
     print("Saving padded mappings...")
     pickle_save("./tokenized-padded", mappings) 

@@ -122,3 +122,7 @@ preprocess/glove.6B.50d.txt
 lstm/.vector_cache
 lstm/lightning_logs
 lstm/checkpoints
+
+# Pytorch lightning stuff on root dir
+lightning_logs
+checkpoints

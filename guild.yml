@@ -26,7 +26,7 @@
       main: preprocess.tokenize_data
       flags-import: all
     train-lstm:
-      main: lstm.train_lstm
+      main: train_lstm
       flags-import: all
       requires:
         - tokenized

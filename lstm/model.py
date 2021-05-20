@@ -3,7 +3,6 @@ For quick reference
     nn.Embedding - input [seq_length, batch_size]   output [seq_length, batch_size, embedding_size]
     nn.LSTM      - input []
 """
-
 from typing import Any, Optional
 import torch
 import torch.optim
@@ -37,8 +36,11 @@ class Encoder(pl.LightningModule):
 
     def forward(self, input, hidden):
         embedded = self.embedding(input)  # .view(1, 1, -1)
-        output, hidden = self.lstm(embedded, hidden)
-        return output, hidden
+        output, hidden_cell = self.lstm(embedded, hidden)
+        # h_0 = torch.tanh(hidden_cell[0])
+        # c_0 = torch.tanh(hidden_cell[1])
+        # output = torch.tanh(output)
+        return output, hidden_cell  # (h_0, c_0)
 
     def init_hidden(self):
         hidden = torch.zeros(self.num_layers, config.BATCH_SIZE, self.hidden_size).to(
@@ -72,7 +74,7 @@ class Decoder(pl.LightningModule):
         output = self.embedding(input)
         output, hidden = self.lstm(output, hidden)
         output = self.out(output[0])
-        output = F.tanh(output)
+        # output = torch.tanh(output)
         return output, hidden
 
     def init_hidden(self):
@@ -87,11 +89,13 @@ class LSTMSummary(pl.LightningModule):
         embedding_size: Optional[int] = None,
         hidden_size: Optional[int] = None,
         word2index: Optional[Any] = None,
+        index2word: Optional[Any] = None,
         embeddings: Optional[Any] = None,
     ):
         super().__init__()
         self.embedding_size = embedding_size
         self.word2index = word2index
+        self.index2word = index2word
         self.embeddings = embeddings
 
         self.encoder = Encoder(embedding_size, hidden_size, word2index=word2index)
@@ -102,9 +106,8 @@ class LSTMSummary(pl.LightningModule):
             if "embedding" in name:
                 # Don't initialize the weights of the embedding layer here
                 # as they'll be initialized from the pretrained glove
-                params = nn.Parameter(
-                    torch.from_numpy(self.embeddings), requires_grad=False
-                )
+                params.requires_grad = False
+                params.data.copy_(torch.from_numpy(self.embeddings))
             if "bias" in name:
                 torch.nn.init.constant_(params, 0.0)
             if "weight" in name:
@@ -114,18 +117,14 @@ class LSTMSummary(pl.LightningModule):
         input_length = input_tensor.shape[0]
 
         # Encode phase
-        encoder_outputs = torch.zeros(
-            config.INPUT_LENGTH, self.encoder.hidden_size, requires_grad=True
-        ).to(self.device)
         encoder_hidden = self.encoder.init_hidden()
 
         for ei in range(input_length):
             # Note, we do input_tensor[ei, :].unsequeeze(0) below to make the input to
             # dim [1, batch_size] (i.e., batches of 1 token) to fit nn.Embedding requirements
-            encoder_output, encoder_hidden = self.encoder(
+            _, encoder_hidden = self.encoder(
                 input_tensor[ei, :].unsqueeze(0), encoder_hidden
             )
-            encoder_outputs[ei] = encoder_output[0, 0]
 
         # Decode phase
         decoder_hidden = encoder_hidden
@@ -136,8 +135,8 @@ class LSTMSummary(pl.LightningModule):
             (config.OUTPUT_LENGTH, config.BATCH_SIZE, self.embedding_size),
             self.word2index[config.PAD_TOKEN],
             dtype=torch.float,
-            requires_grad=True,
         ).to(self.device)
+
         output_sentence = []
         for di in range(config.OUTPUT_LENGTH):
             decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
@@ -146,15 +145,17 @@ class LSTMSummary(pl.LightningModule):
             decoder_input = topi.permute(-1, 0).detach()
             output_sentence.append(decoder_input)
 
-        if self.global_step % 200 == 0:
+        # import pdb; pdb.set_trace()
+        if self.global_step % config.PRINT_PREDICTION_STEP == 0:
             pred = " ".join(
                 [
-                    self.word2index[di[:, 0].item()]
+                    self.index2word[di[:, 0].item()]
                     for di in output_sentence
-                    if di[:, 0].item() != self.word2index[config.PAD_TOKEN]
+                    if di[:, 0].item() in self.index2word.keys()
+                    and self.index2word[di[:, 0].item()] != config.PAD_TOKEN
                 ]
             )
-            logger.debug("Prediction\t", pred)
+            logger.debug(f"Prediction: {pred}")
 
         return outputs
 
@@ -164,10 +165,12 @@ class LSTMSummary(pl.LightningModule):
             lr=config.LEARNING_RATE,
         )
 
+    # def configure_optimizers(self):
+    #     return torch.optim.SGD([param for param in self.parameters() if param.requires_grad == True], lr=0.1, momentum=0.9)
+
     def training_step(self, train_batch, train_idx) -> STEP_OUTPUT:
         input_tensor = train_batch["input"]
         label_tensor = train_batch["label"]
-
         # input_tensor is of dim [batch_size, seq_len], but nn.Embedding accepts
         # [seq_len, batch_size] so we have to switch the axies
         pred_tensor = self.forward(input_tensor.permute(1, 0))
