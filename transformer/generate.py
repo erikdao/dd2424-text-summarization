@@ -10,8 +10,8 @@ EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
 SAVE_EPOCHS = 5
 EPOCHS = 6
-HEADS = 5 # default = 8
-N = 3 # default = 6
+HEADS = 10 # default = 8
+N = 6 # default = 6
 DIMFORWARD = 512
 BATCH_SIZE = 1
 
@@ -57,33 +57,13 @@ def main():
     
     inputs = mappings['inputs']
     labels = mappings['labels']
-    """
-    mappings_train = {'inputs': inputs[:2*BATCH_SIZE], 'labels': labels[:2*BATCH_SIZE]}
-    mappings_val = {'inputs': inputs[2*BATCH_SIZE:4*BATCH_SIZE], 'labels': labels[2*BATCH_SIZE:4*BATCH_SIZE]}
-    """
-    mappings_test = {'inputs': inputs[4*BATCH_SIZE:6*BATCH_SIZE], 'labels': labels[4*BATCH_SIZE:6*BATCH_SIZE]}
 
-    """
-    print("Loading train loader...")
-    train_loader = create_dataloader_glove(
-        mappings = mappings_train,
-        word2index = word2index,
-        embeddings = embeddings,
-        word_emb_size = word_emb_size,
-        batch_size = BATCH_SIZE,
-        shuffle=True
-    )
-    print("Loading val loader...")
-    val_loader = create_dataloader_glove(
-        mappings = mappings_val,
-        word2index = word2index,
-        embeddings = embeddings,
-        word_emb_size = word_emb_size,
-        batch_size = BATCH_SIZE,
-        shuffle=True
-    )
-    """
+    start = 327200
+    mappings_test = {'inputs': inputs[start+1*BATCH_SIZE:start+3*BATCH_SIZE], 'labels': labels[start + 1*BATCH_SIZE:start +3*BATCH_SIZE]}
+
+    #mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'lab    els': labels[327200+40900:327200+2*40900]}
     print("Loading test loader...")
+
     test_loader = create_dataloader_glove(
         mappings = mappings_test,
         word2index = word2index,
@@ -120,8 +100,6 @@ def main():
     print("start generate...")
     
     start_time = time.time()
-
-    
 
     batch = next(iter(test_loader))
     
