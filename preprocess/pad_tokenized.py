@@ -5,7 +5,7 @@ from tqdm import tqdm
 # about 84 % less than 128 words
 # will truncate longer sentences to MAX_SENTENCE_LEN words
 MAX_INPUT_LEN = 128
-MAX_OUTPUT_LEN = 32
+MAX_OUTPUT_LEN = 10
 
 def main():
     input_dir = "./tokenized"
