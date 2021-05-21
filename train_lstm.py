@@ -58,16 +58,16 @@ def main_v2(args: typing.Any) -> None:
     }
 
     if args.dev:  # Development mode, use less data
-        train_mappings = {"inputs": inputs[:800], "labels": labels[:800]}
+        train_mappings = {"inputs": inputs[:10000], "labels": labels[:10000]}
         logger.debug(f"train_mappings - inputs: {len(train_mappings['inputs'])}; labels: {len(train_mappings['labels'])}")
         val_mappings = {
-            "inputs": inputs[800 : 800 + 100],
-            "labels": labels[800 : 800 + 100],
+            "inputs": inputs[10000 : 10000 + 1000],
+            "labels": labels[10000 : 10000 + 1000],
         }
         logger.debug(f"val_mappings - inputs: {len(val_mappings['inputs'])}; labels: {len(val_mappings['labels'])}")
         test_mappings = {
-            "inputs": inputs[800 + 100 : 800 + 2 * 100],
-            "labels": labels[800 + 100 : 800 + 2 * 100],
+            "inputs": inputs[10000 + 1000 : 10000 + 2 * 1000],
+            "labels": labels[10000 + 1000 : 10000 + 2 * 1000],
         }
         logger.debug(f"test_mappings - inputs: {len(test_mappings['inputs'])}; labels: {len(test_mappings['labels'])}")
     # Create data loaders
@@ -119,7 +119,7 @@ def main_v2(args: typing.Any) -> None:
     trainer = pl.Trainer(
         gpus=1,
         max_epochs=config.EPOCHES,
-        # val_check_interval=config.VAL_CHECK_STEP,
+        val_check_interval=config.VAL_CHECK_STEP,
         gradient_clip_val=1.0,
         callbacks=callbacks,
         limit_val_batches=0.33

@@ -6,12 +6,12 @@ Configuration for LSTM experiments
 class Config(object):
     EMBEDDING_DIM = 50
     INPUT_LENGTH = 128
-    OUTPUT_LENGTH = 32
+    OUTPUT_LENGTH = 10
     HIDDEN_SIZE = 256
     ENCODER_HIDDEN_SIZE = 256
     DECODER_HIDDEN_SIZE = 256
     BATCH_SIZE = 2
-    LEARNING_RATE = 0.003
+    LEARNING_RATE = 0.001
     MOMENTUM = 0.9
     PAD_TOKEN = "<PAD>"
     SOS_TOKEN = "<SOS>"

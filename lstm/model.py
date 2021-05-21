@@ -3,7 +3,9 @@ For quick reference
     nn.Embedding - input [seq_length, batch_size]   output [seq_length, batch_size, embedding_size]
     nn.LSTM      - input []
 """
+import pdb
 from typing import Any, Optional
+import numpy as np
 import torch
 import torch.optim
 import torch.nn as nn
@@ -69,13 +71,15 @@ class Decoder(pl.LightningModule):
         )
         self.lstm = nn.LSTM(config.EMBEDDING_DIM, hidden_size)
         self.out = nn.Linear(hidden_size, output_size)
+        self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input, hidden):
         output = self.embedding(input)
         output, hidden = self.lstm(output, hidden)
         output = self.out(output[0])
-        # output = torch.tanh(output)
-        return output, hidden
+        output = self.softmax(output)
+        # h_0, c_0 = torch.tanh(hidden[0]), torch.tanh(hidden[1])
+        return output, hidden  # (h_0, c_0)
 
     def init_hidden(self):
         return torch.zeros(self.num_layers, config.EMBEDDING_DIM, self.hidden_size).to(
@@ -136,26 +140,13 @@ class LSTMSummary(pl.LightningModule):
             self.word2index[config.PAD_TOKEN],
             dtype=torch.float,
         ).to(self.device)
-
-        output_sentence = []
+        
         for di in range(config.OUTPUT_LENGTH):
             decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
             outputs[di] = decoder_output
             topv, topi = decoder_output.topk(1)
-            decoder_input = topi.permute(-1, 0).detach()
-            output_sentence.append(decoder_input)
-
-        # import pdb; pdb.set_trace()
-        if self.global_step % config.PRINT_PREDICTION_STEP == 0:
-            pred = " ".join(
-                [
-                    self.index2word[di[:, 0].item()]
-                    for di in output_sentence
-                    if di[:, 0].item() in self.index2word.keys()
-                    and self.index2word[di[:, 0].item()] != config.PAD_TOKEN
-                ]
-            )
-            logger.debug(f"Prediction: {pred}")
+            decoder_input = topi.permute(1, 0).detach()
+            # outputs[di] = decoder_input
 
         return outputs
 
@@ -165,9 +156,6 @@ class LSTMSummary(pl.LightningModule):
             lr=config.LEARNING_RATE,
         )
 
-    # def configure_optimizers(self):
-    #     return torch.optim.SGD([param for param in self.parameters() if param.requires_grad == True], lr=0.1, momentum=0.9)
-
     def training_step(self, train_batch, train_idx) -> STEP_OUTPUT:
         input_tensor = train_batch["input"]
         label_tensor = train_batch["label"]
@@ -175,9 +163,14 @@ class LSTMSummary(pl.LightningModule):
         # [seq_len, batch_size] so we have to switch the axies
         pred_tensor = self.forward(input_tensor.permute(1, 0))
         loss = F.cross_entropy(
-            pred_tensor.float().view(-1, self.embedding_size), label_tensor.view(-1)
+            pred_tensor.float().permute(1, 2, 0), label_tensor
         )
         self.log("train_loss", loss, on_step=True, on_epoch=True)
+
+        if self.global_step % config.PRINT_PREDICTION_STEP == 0:
+            pred_sentence = self.decode_sentence(pred_tensor)
+            logger.debug(f"Prediction: {pred_sentence}")
+
         return loss
 
     def validation_step(self, val_batch, val_idx) -> Optional[STEP_OUTPUT]:
@@ -188,7 +181,24 @@ class LSTMSummary(pl.LightningModule):
         pred_tensor = self.forward(input_tensor.permute(1, 0))
         # At this step, pred_tensor should be of dim [seq_len, batch_size, embedding_size]
         loss = F.cross_entropy(
-            pred_tensor.float().view(-1, self.embedding_size), label_tensor.view(-1)
+            pred_tensor.float().permute(1, 2, 0), label_tensor
         )
         self.log("val_loss", loss, on_step=True, on_epoch=True)
         return loss
+
+    def decode_sentence(self, inputs: torch.Tensor, only_first=True) -> Optional[Any]:
+        """Produce a real string from model's predictions"""
+        assert inputs.size() == torch.Size([config.OUTPUT_LENGTH, config.BATCH_SIZE, self.embedding_size])
+
+        token_ids = torch.zeros((config.OUTPUT_LENGTH, config.BATCH_SIZE))
+        for idx, input in enumerate(inputs):
+            topv, topi = input.topk(1)
+            token_ids[idx] = topi.permute(1, 0).detach()
+        
+        if only_first:
+            first_tokens = token_ids[:, 0]
+            sentence = " ".join([
+                self.index2word[di.item()] for di in first_tokens
+                if di.item() in self.index2word and self.index2word[di.item()] != config.PAD_TOKEN
+            ])
+            return sentence
