@@ -136,8 +136,8 @@ def main():
             #print(pred)
             #print()
 
-            #pred = F.log_softmax(pred, dim=1).to(device)
-            print(pred.shape)
+            pred = F.log_softmax(pred, dim=1).to(device)
+            #print(pred.shape)
 
              
             pred_word_idx = int(pred[0,i+1, 3:].argmax()) # idx 3 for dim2 to only include eos
