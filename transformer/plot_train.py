@@ -38,7 +38,7 @@ def main():
         print("No losses...")
         exit()
     
-    n_losses = len(train_losses):
+    n_losses = len(train_losses)
     for i in range(n_losses):
         print("Train loss {}, Val loss {}".format(train_losses[i],val_losses[i]))
     #plt.plot(train_losses)  
