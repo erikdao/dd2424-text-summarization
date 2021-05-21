@@ -30,9 +30,7 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
     else:
         print("=> no checkpoint found at '{}'".format(filename))
         load_flag = False
-        train_loss = []
-        val_loss = []
-    return load_flag, model, optimizer, train_loss, val_loss
+    return load_flag, model, optimizer
 
 def save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch):
     state = {'state_dict': transformer.state_dict(),
@@ -143,7 +141,7 @@ def main():
     optimizer = torch.optim.Adam(transformer.parameters(), lr=LEARN_RATE, betas=(0.9, 0.98), eps=1e-9) # TODO tune params
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
     
-    load_flag, transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
+    load_flag, transformer, optimizer = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
     if not load_flag:    
         print("xavier init...")
         for p in transformer.transformer_encoder.parameters():
@@ -156,8 +154,8 @@ def main():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
         print("init loss histories")
-        train_loss_per_epoch = []
-        val_loss_per_epoch = []
+    train_loss_per_epoch = []
+    val_loss_per_epoch = []
 
     transformer = transformer.to(device)
 
