@@ -16,7 +16,7 @@ HEADS = 10 # default = 8 have to be dividable by d_model
 N = 6 # default = 6
 DIMFORWARD = 512
 LEARN_RATE = 0.001
-BATCH_SIZE = 100
+BATCH_SIZE = 50
 TEST = False
 
 def load_checkpoint(model, optimizer, filename='transformer_model'):
@@ -43,7 +43,6 @@ def save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_e
                 'train_loss': train_loss_per_epoch,
                 'val_loss': val_loss_per_epoch
                 }
-    print(loss_log)
     with open(SAVED_LOSS_LOG_FILE, 'w') as outfile:
         json.dump(loss_log, outfile)
     torch.save(state, SAVED_MODEL_FILE)
