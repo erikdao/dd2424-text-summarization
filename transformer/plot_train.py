@@ -1,12 +1,15 @@
 from utils.pickle import *
 from dataload.dataloader import *
 import time
+import matplotlib.pyplot as plt
+from utils.pickle import *
 
 from utils.glove_embedding import *
 from transformer.transformer_model import *
 from torch.utils.tensorboard import SummaryWriter
 
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
+SAVE_LOSS_FILE = './transformer/losses.pickle'
 
 def load_losses(filename='transformer_model'):
     if os.path.isfile(filename):
@@ -32,13 +35,21 @@ def main():
         print("No losses...")
         exit()
     
+    pickle_save(SAVE_LOSS_FILE, {'train_losses':train_losses, 'val_losses': val_losses})
+
+    plt.plot(train_losses)  
+    plt.plot(val_losses)
+    plt.show()
+    """
     writer = SummaryWriter()
     n_points = len(train_losses)
+
     for i in range(n_points):
         writer.add_scalar(f'losses/train',train_losses[i],i)
         writer.add_scalar(f'losses/val', val_losses[i], i)
     writer.flush()
     writer.close()
+    """
 
 if __name__ == '__main__':
     main()

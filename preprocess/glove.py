@@ -107,4 +107,3 @@ def load_glove_embeddings(embedding_file):
         embeddings.insert(padding_idx + 3, adjust_mean_std(np.asarray(np.random.rand(D), "float32"), mean, std) )
 
     return D, np.array(embeddings, dtype=np.float32)
-
