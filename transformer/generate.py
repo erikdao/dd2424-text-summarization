@@ -106,6 +106,7 @@ def main():
     tgt_real = batch['label']
     # get start of string
     sos_idx = word2index['<SOS>']
+    eos_idx = word2index['<EOS>']
     #ys = torch.Tensor([[sos_idx] for b in range(BATCH_SIZE)])
 
     
@@ -126,32 +127,38 @@ def main():
 
         #print(trg)
         #print(trg.shape)
-        tgt_attention_mask, tgt_key_padding_mask = create_tgt_masks(trg, device)
-        
-        pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask).to(device)
-        pred = pred.transpose(0, 1).contiguous()
-        #print(pred.shape)
-        #print(pred)
-        #print()
+        if i != max_label_seq_length - 2:
+            tgt_attention_mask, tgt_key_padding_mask = create_tgt_masks(trg, device)
+            
+            pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask).to(device)
+            pred = pred.transpose(0, 1).contiguous()
+            #print(pred.shape)
+            #print(pred)
+            #print()
 
-        pred = F.log_softmax(pred, dim=1).to(device)
-        #print(pred)
+            pred = F.log_softmax(pred, dim=1).to(device)
+            #print(pred)
 
-        pred_word_idx = int(pred[0,i+1].argmax())
-        #print("max index")
-        #print(pred_word_idx)
-        add_word = index2word[pred_word_idx]
-        #print("pred word" + add_word)
-        translated_sentence += " " + add_word
-        if add_word == "<EOS>":
+            pred_word_idx = int(pred[0,i+1].argmax())
+            #print("max index")
+            #print(pred_word_idx)
+            add_word = index2word[pred_word_idx]
+            #print("pred word" + add_word)
+            translated_sentence += " " + add_word
+            if add_word == "<EOS>":
+                trg[0,i+1] = pred_word_idx
+                break
+
+            #print("concat")
+            #print(trg.shape)
+            #print(torch.LongTensor([[pred_word_idx]]).shape)
             trg[0,i+1] = pred_word_idx
-            break
+            #trg[i] = torch.cat((trg, torch.LongTensor([[pred_word_idx]])))
+        else:
+            add_word = "<EOS>"
+            translated_sentence += " " + add_word
+            trg[0,i+1] = eos_idx 
 
-        #print("concat")
-        #print(trg.shape)
-        #print(torch.LongTensor([[pred_word_idx]]).shape)
-        trg[0,i+1] = pred_word_idx
-        #trg[i] = torch.cat((trg, torch.LongTensor([[pred_word_idx]])))
         
     print("\nGENERATED: ")
     print(translated_sentence)
