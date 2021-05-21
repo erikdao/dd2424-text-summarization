@@ -39,9 +39,17 @@ def save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_e
                 'optimizer': optimizer.state_dict(),
             }
 
+    if os.path.isfile(SAVED_LOSS_LOG_FILE):
+        with open(SAVED_LOSS_LOG_FILE) as outfile:
+            losses = json.load(SAVED_LOSS_LOG_FILE)
+            tloss = losses['train_loss']
+            vloss = losses['val_loss']
+    else:
+        tloss = []
+        vloss = []
     loss_log = {
-                'train_loss': train_loss_per_epoch,
-                'val_loss': val_loss_per_epoch
+                'train_loss': tloss+train_loss_per_epoch,
+                'val_loss': vloss+val_loss_per_epoch
                 }
     with open(SAVED_LOSS_LOG_FILE, 'w') as outfile:
         json.dump(loss_log, outfile)
