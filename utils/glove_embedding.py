@@ -19,4 +19,4 @@ class GloveEmbedding():
     def forward(self, idxs):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         idxs = idxs.to(device) 
-        return torch.cat((self.trained_emb(idxs), self.word_emb(idxs)), -1) * math.sqrt(2*self.word_emb_size)
+        return (torch.cat((self.trained_emb(idxs), self.word_emb(idxs)), -1) * math.sqrt(2*self.word_emb_size)).to(device)
