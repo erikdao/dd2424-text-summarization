@@ -14,22 +14,17 @@ N = 6 # default = 6
 DIMFORWARD = 512
 BATCH_SIZE = 1
 
-def load_checkpoint(model, optimizer, filename='transformer_model'):
+def load_checkpoint(model, filename='transformer_model'):
     # Note: Input model & optimizer should be pre-defined.  This routine only updates their states.
     if os.path.isfile(filename):
         print("=> loading checkpoint '{}'".format(filename))
         checkpoint = torch.load(filename)
         model.load_state_dict(checkpoint['state_dict'])
-        #optimizer.load_state_dict(checkpoint['optimizer'])
-        #train_loss = checkpoint['loss_epoch_history']['train_loss']
-        #val_loss = checkpoint['loss_epoch_history']['val_loss']
         load_flag = True
     else:
         print("=> no checkpoint found at '{}'".format(filename))
         load_flag = False
         model = None
-        #train_loss = 0.
-        #val_loss = 0.
     return load_flag, model
 
 def main():
@@ -93,7 +88,7 @@ def main():
         embeddings=embeddings
     ).to(device)
 
-    load_flag, transformer = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
+    load_flag, transformer = load_checkpoint(transformer, filename=SAVED_MODEL_FILE)
     if not load_flag:
         print("\"Focking idiot!!!!\", Adam 19.05.2021")
         exit()
