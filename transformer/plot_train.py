@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
 SAVE_LOSS_FILE = './transformer/losses.pickle'
 
+
 def load_losses(filename='transformer_model'):
     if os.path.isfile(filename):
         print("=> loading checkpoint '{}'".format(filename))

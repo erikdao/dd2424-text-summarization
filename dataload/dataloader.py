@@ -31,7 +31,7 @@ class ReviewDatasetGlove(data_utils.Dataset):
         inputs_idxs = torch.IntTensor(inputs_idxs)
         label_idxs = [[toktup[1] for toktup in in_sentence] for in_sentence in labels]    
         label_idxs = torch.LongTensor(label_idxs) 
-        self.n_points, self.max_len = label_idxs.shape
+        self.n_points, _ = label_idxs.shape
         self.data = {"inputs": inputs_idxs, "labels": label_idxs}
         self.transform = transform
 
