@@ -24,9 +24,9 @@ def load_losses(filename='loss_loggs.json'):
     else:
         print("=> no checkpoint found at '{}'".format(filename))
         load_flag = False
-        train_loss = []
-        val_loss = []
-    return load_flag, train_loss, val_loss
+        train_losses = []
+        val_losses = []
+    return load_flag, train_losses, val_losses
 
 
 def main():
