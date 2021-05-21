@@ -10,7 +10,7 @@ class GloveEmbedding():
         self.vocabulary_size = len(self.w2i.keys())
         self.word_emb_size = 50
         
-        self.trained_emb = nn.Embedding(self.vocabulary_size, self.word_emb_size)
+        self.trained_emb = nn.Embedding(self.vocabulary_size, self.word_emb_size).to(device)
         self.trained_emb.weight.data.uniform_(-0.1, 0.1)
 
         self.word_emb = nn.Embedding(self.vocabulary_size, self.word_emb_size)
