@@ -140,10 +140,11 @@ def main():
             #print(pred.shape)
 
              
+            
             pred_word_idx = int(pred[0,i+1, 3:].argmax()) # idx 3 for dim2 to only include eos
             #print("max index")
             #print(pred_word_idx)
-            add_word = index2word[pred_word_idx]
+            add_word = index2word[pred_word_idx+3] # 3 so we dont use sos,unk,pad
             #print("pred word" + add_word)
             translated_sentence += " " + add_word
             if add_word == "<EOS>":
