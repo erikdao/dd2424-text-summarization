@@ -25,6 +25,7 @@ class Encoder(pl.LightningModule):
         hidden_size,
         num_layers: Optional[int] = 1,
         word2index: Optional[Any] = None,
+        dropout: Optional[float] = 0.5
     ):
         super().__init__()
         self.hidden_size = hidden_size
@@ -35,13 +36,12 @@ class Encoder(pl.LightningModule):
             input_size, config.EMBEDDING_DIM, padding_idx=word2index[config.PAD_TOKEN]
         )
         self.lstm = nn.LSTM(config.EMBEDDING_DIM, hidden_size)
+        self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, input, hidden):
-        embedded = self.embedding(input)  # .view(1, 1, -1)
+        embedded = self.dropout(self.embedding(input))  # .view(1, 1, -1)
+        embedded = F.relu(embedded)
         output, hidden_cell = self.lstm(embedded, hidden)
-        # h_0 = torch.tanh(hidden_cell[0])
-        # c_0 = torch.tanh(hidden_cell[1])
-        # output = torch.tanh(output)
         return output, hidden_cell  # (h_0, c_0)
 
     def init_hidden(self):
@@ -61,6 +61,7 @@ class Decoder(pl.LightningModule):
         output_size,
         num_layers: Optional[int] = 1,
         word2index: Optional[Any] = None,
+        dropout: Optional[float] = 0.5
     ):
         super().__init__()
         self.hidden_size = hidden_size
@@ -72,13 +73,14 @@ class Decoder(pl.LightningModule):
         self.lstm = nn.LSTM(config.EMBEDDING_DIM, hidden_size)
         self.out = nn.Linear(hidden_size, output_size)
         self.softmax = nn.LogSoftmax(dim=1)
+        self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, input, hidden):
-        output = self.embedding(input)
+        output = self.dropout(self.embedding(input))
+        output = F.relu(output)
         output, hidden = self.lstm(output, hidden)
         output = self.out(output[0])
         output = self.softmax(output)
-        # h_0, c_0 = torch.tanh(hidden[0]), torch.tanh(hidden[1])
         return output, hidden  # (h_0, c_0)
 
     def init_hidden(self):
