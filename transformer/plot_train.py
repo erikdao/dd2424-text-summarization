@@ -7,18 +7,20 @@ from utils.pickle import *
 from utils.glove_embedding import *
 from transformer.transformer_model import *
 from torch.utils.tensorboard import SummaryWriter
+import json
 
-SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
-SAVE_LOSS_FILE = './transformer/losses.pickle'
+#SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
+SAVED_LOSS_LOG_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/loss_loggs.json'
 
 
-def load_losses(filename='transformer_model'):
+def load_losses(filename='loss_loggs.json'):
     if os.path.isfile(filename):
         print("=> loading checkpoint '{}'".format(filename))
-        checkpoint = torch.load(filename)
-        train_losses = checkpoint['loss_epoch_history']['train_loss']
-        val_losses = checkpoint['loss_epoch_history']['val_loss']
-        load_flag = True
+        with open(filename) as json_file:
+            data = json.load(json_file)
+            train_losses = data['train_loss']
+            val_losses = data['val_loss']
+            load_flag = True
     else:
         print("=> no checkpoint found at '{}'".format(filename))
         load_flag = False
@@ -31,16 +33,17 @@ def main():
     np.random.seed(420)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    
-    load_flag, train_losses, val_losses = load_losses(filename=SAVED_MODEL_FILE)
+    load_flag, train_losses, val_losses = load_losses(filename=SAVED_LOSS_LOG_FILE)
     if not load_flag:    
         print("No losses...")
         exit()
     
-    pickle_save(SAVE_LOSS_FILE, {'train_losses':train_losses, 'val_losses': val_losses})
-
-    plt.plot(train_losses)  
-    plt.plot(val_losses)
-    plt.show()
+    n_losses = len(train_losses):
+    for i in range(n_losses):
+        print("Train loss {}, Val loss {}".format(train_losses[i],val_losses[i]))
+    #plt.plot(train_losses)  
+    #plt.plot(val_losses)
+    #plt.show()
     """
     writer = SummaryWriter()
     n_points = len(train_losses)
