@@ -127,7 +127,7 @@ def main():
 
         #print(trg)
         #print(trg.shape)
-        if i != max_label_seq_length - 2:
+        if i < max_label_seq_length - 2:
             tgt_attention_mask, tgt_key_padding_mask = create_tgt_masks(trg, device)
             
             pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask).to(device)
@@ -137,7 +137,7 @@ def main():
             #print()
 
             #pred = F.log_softmax(pred, dim=1).to(device)
-            print(pred)
+            print(pred.shape)
 
             pred_word_idx = int(pred[0,i+1].argmax())
             #print("max index")
@@ -158,6 +158,7 @@ def main():
             add_word = "<EOS>"
             translated_sentence += " " + add_word
             trg[0,i+1] = eos_idx 
+            break
 
         
     print("\nGENERATED: ")
