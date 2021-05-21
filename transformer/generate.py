@@ -139,7 +139,7 @@ def main():
             #pred = F.log_softmax(pred, dim=1).to(device)
             print(pred.shape)
 
-            pred_word_idx = int(pred[0,i+1].argmax())
+            pred_word_idx = int(pred[0,i+1, 4:].argmax())
             #print("max index")
             #print(pred_word_idx)
             add_word = index2word[pred_word_idx]
