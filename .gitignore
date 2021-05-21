@@ -1,6 +1,7 @@
 # Data
 Reviews.csv
 *.csv
+*.swp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -107,5 +108,21 @@ ENV/
 
 # other
 .vscode
-data/amazon-product-reviews
+Reviews.csv
+data/glove.6B
+data/tokenized
+data/tokenized-padded
+data/word2index
+glove6B
+preprocess/glove.6B.50d.txt
 
+# Guild ai
+.guild/*
+
+lstm/.vector_cache
+lstm/lightning_logs
+lstm/checkpoints
+
+# Pytorch lightning stuff on root dir
+lightning_logs
+checkpoints

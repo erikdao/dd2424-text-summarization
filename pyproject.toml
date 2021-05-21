@@ -7,7 +7,7 @@ authors = ["erikdao <cuong@neuraltalks.io>"]
 [tool.poetry.dependencies]
 python = ">=3.7.1,<3.10"
 torch = "^1.8.1"
-pytorch-lightning = "^1.2.7"
+pytorch-lightning = "^1.3.1"
 numpy = "^1.20.2"
 pandas = "^1.2.4"
 matplotlib = "^3.4.1"
@@ -19,6 +19,11 @@ jupyterlab = "^3.0.15"
 torchvision = "^0.9.1"
 ipywidgets = "^7.6.3"
 tqdm = "^4.60.0"
+spacy = "^3.0.6"
+guildai = "^0.7.3"
+torchtext = "^0.9.1"
+beautifulsoup4 = "^4.9.3"
+lxml = "^4.6.3"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.0"
