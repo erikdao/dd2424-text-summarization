@@ -5,11 +5,10 @@ from torch.autograd import Variable
 
 from utils.glove_embedding import *
 from transformer.transformer_model import *
+import json
 
 EMBEDDING_FILE = '../preprocess/glove.6B.50d.txt'
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
-SAVE_EPOCHS = 5
-EPOCHS = 6
 HEADS = 10 # default = 8
 N = 6 # default = 6
 DIMFORWARD = 512
@@ -21,16 +20,17 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
         print("=> loading checkpoint '{}'".format(filename))
         checkpoint = torch.load(filename)
         model.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        train_loss = checkpoint['loss_epoch_history']['train_loss']
-        val_loss = checkpoint['loss_epoch_history']['val_loss']
+        #optimizer.load_state_dict(checkpoint['optimizer'])
+        #train_loss = checkpoint['loss_epoch_history']['train_loss']
+        #val_loss = checkpoint['loss_epoch_history']['val_loss']
         load_flag = True
     else:
         print("=> no checkpoint found at '{}'".format(filename))
         load_flag = False
-        train_loss = 0.
-        val_loss = 0.
-    return load_flag, model, optimizer, train_loss, val_loss
+        model = None
+        #train_loss = 0.
+        #val_loss = 0.
+    return load_flag, model
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -41,8 +41,10 @@ def main():
     print("Loading mappings...")
     mappings_pickle = input_dir_tok + "/tokenized-padded"
     mappings = pickle_load(mappings_pickle)
-    sequence_length = len(mappings['inputs'][0])
-    print(f"seq length {sequence_length}")
+    max_input_seq_length = len(mappings['inputs'][0])
+    max_label_seq_length = len(mappings['labels'][0])
+    print(f"seq input length {max_input_seq_length }")
+    print(f"seq label length {max_label_seq_length }")
 
     print("Loading word2index...")
     word2index_pickle = input_dir_w2i + "/word2index"
@@ -78,19 +80,20 @@ def main():
 
     transformer = SummaryTransformer(
         vocab_size=len(word2index.keys()),
-        d_model=word_emb_size,
+        word_emb_size=word_emb_size,
         nhead=HEADS,
         num_encoder_layers=N,
         num_decoder_layers=N, 
         dim_feedforward=DIMFORWARD, 
-        max_seq_length=sequence_length, 
+        max_input_seq_length=max_input_seq_length,
+        max_label_seq_length=max_label_seq_length,
         pos_dropout=0.1, 
         trans_dropout=0.1, 
         word2index=word2index,
         embeddings=embeddings
     ).to(device)
-    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.01, betas=(0.9, 0.98), eps=1e-9) # TODO
-    load_flag, transformer, optimizer, train_loss, val_loss = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
+
+    load_flag, transformer = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
     if not load_flag:
         print("\"Focking idiot!!!!\", Adam 19.05.2021")
         exit()
@@ -115,7 +118,7 @@ def main():
     
     
     trg_init_tok = sos_idx
-    trg = torch.LongTensor([[trg_init_tok]  + [0 for p in range(src.shape[1] - 1)]]).to(device)
+    trg = torch.LongTensor([[trg_init_tok]  + [0 for p in range(max_label_seq_length - 1)]]).to(device)
 
 
     # encoding once
@@ -123,8 +126,7 @@ def main():
     memory = transformer.encode(src, src_key_padding_mask, device).to(device)
     
     translated_sentence = ""
-    maxlen = 25
-    for i in range(maxlen):
+    for i in range(max_label_seq_length):
         #print("iteration = " + str(i))
 
         #print(trg)
