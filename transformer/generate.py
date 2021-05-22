@@ -123,16 +123,14 @@ def main():
             
             pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask).to(device)
             
-            print(pred.shape)
             #print(pred)
-            print("transpose")
             pred = pred.transpose(0, 1).contiguous()
-            print(pred.shape)
+            print("transpose pred ", pred.shape)
 
             # TODO should we use a softmax
             #pred = F.log_softmax(pred, dim=1).to(device)
             #print(pred.shape)
-            pred_word_idx = int(pred.argmax())
+            pred_word_idx = int(pred[:,i,:].argmax())
             #print("max index")
             print("PRED WORD IDX ",pred_word_idx)
             add_word = index2word[pred_word_idx]
@@ -141,14 +139,14 @@ def main():
             if add_word == "<EOS>":
                 trg = torch.cat((trg, torch.Tensor([[pred_word_idx]])), 1)
                 break
-            print("idx = "+str(pred_word_idx))
-            print("old TRG")
-            print(trg.shape)
-            print(trg)
+            #print("idx = "+str(pred_word_idx))
+            #print("old TRG")
+            #print(trg.shape)
+            #print(trg)
             trg = torch.cat((trg, torch.LongTensor([[pred_word_idx]]).to(device)), 1)
-            print("new TRG")
-            print(trg.shape)
-            print(trg)
+            #print("new TRG")
+            #print(trg.shape)
+            #print(trg)
         else:
             add_word = "<EOS>"
             translated_sentence += " " + add_word
