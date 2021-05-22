@@ -39,11 +39,11 @@ def main():
         exit()
     
     n_losses = len(train_losses)
-    for i in range(n_losses):
-        print("Train loss {}, Val loss {}".format(train_losses[i],val_losses[i]))
-    #plt.plot(train_losses)  
-    #plt.plot(val_losses)
-    #plt.show()
+    #for i in range(n_losses):
+    #    print("Train loss {}, Val loss {}".format(train_losses[i],val_losses[i]))
+    plt.plot(train_losses)  
+    plt.plot(val_losses)
+    plt.show()
     """
     writer = SummaryWriter()
     n_points = len(train_losses)
