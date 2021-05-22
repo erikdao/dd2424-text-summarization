@@ -125,7 +125,7 @@ def main():
     print("start generate...")
     start_time = time.time()
 
-    for idx, batch in enumerate(train_iter):
+    for idx, batch in enumerate(test_loader):
         print("---- BATCH {} ----".format(idx))
         src = batch['input'].to(DEVICE) # (B,S)
         tgt_real = batch['label'] # (B,S)
