@@ -3,6 +3,9 @@
     - "*.py"
     - "*.h5"
   operations:
+    bullshit:
+      main: transformer.bullshit
+      flags-import: all
     generate-transformer:
       main: transformer.generate
       flags-import: all
