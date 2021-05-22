@@ -11,13 +11,13 @@ EMBEDDING_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summar
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
 SAVED_LOSS_LOG_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/loss_loggs.json'
 SAVE_EPOCHS = 1
-EPOCHS = 16
+EPOCHS = 2
 HEADS = 10 # default = 8 have to be dividable by d_model
 N = 6 # default = 6
 DIMFORWARD = 512
 LEARN_RATE = 0.001
 BATCH_SIZE = 50
-TEST = False
+TEST = True
 
 def load_checkpoint(model, optimizer, filename='transformer_model'):
     # Note: Input model & optimizer should be pre-defined.  This routine only updates their states.
@@ -38,7 +38,7 @@ def save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_e
             }
 
     if os.path.isfile(SAVED_LOSS_LOG_FILE):
-        with open(SAVED_LOSS_LOG_FILE) as outfile:
+        with open(SAVED_LOSS_LOG_FILE, 'r') as outfile:
             losses = json.load(SAVED_LOSS_LOG_FILE)
             tloss = losses['train_loss']
             vloss = losses['val_loss']
@@ -49,6 +49,7 @@ def save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_e
                 'train_loss': tloss+train_loss_per_epoch,
                 'val_loss': vloss+val_loss_per_epoch
                 }
+    print(loss_log)
     with open(SAVED_LOSS_LOG_FILE, 'w') as outfile:
         json.dump(loss_log, outfile)
     torch.save(state, SAVED_MODEL_FILE)
@@ -87,9 +88,8 @@ def main():
         mappings_val = {'inputs': inputs[327200:327200+40900], 'labels': labels[327200:327200+40900]}
         mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'labels': labels[327200+40900:327200+2*40900]}
     else:
-        mappings_train = {'inputs': inputs[:10], 'labels': labels[:10]}
-        mappings_val = {'inputs': inputs[10:20], 'labels': labels[10:20]}
-        mappings_test = {'inputs': inputs[30:40], 'labels': labels[30:40]}
+        mappings_train = {'inputs': inputs[:10000], 'labels': labels[:10000]}
+        mappings_val = {'inputs': inputs[10000:10050], 'labels': labels[10000:10050]}
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
@@ -109,17 +109,6 @@ def main():
         batch_size = BATCH_SIZE,
         shuffle=True
     )
-    """
-    print("Loading test loader...")
-    test_loader = create_dataloader_glove(
-        mappings = mappings_test,
-        word2index = word2index,
-        embeddings = embeddings,
-        word_emb_size = glove_word_emb_size,
-        batch_size = 10,
-        shuffle=True
-    )
-    """
 
     # https://pytorch.org/tutorials/beginner/translation_transformer.html
     print("Init. model...")
@@ -154,11 +143,10 @@ def main():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
         print("init loss histories")
-    train_loss_per_epoch = []
-    val_loss_per_epoch = []
+        train_loss_per_epoch = []
+        val_loss_per_epoch = []
 
     transformer = transformer.to(device)
-
     print("model init completed...")
     loss_fn = nn.CrossEntropyLoss()
     
@@ -171,21 +159,40 @@ def main():
         for idx, data in tqdm(enumerate(train_loader)): #batches
             src = data['input'].to(device) # indecies
             tgt = data['label'].to(device)
-            
 
-            # print("input shape")
-            # print(tgt.shape)
-            # print()
-
-            #tgt_input = tgt[:-1, :]
             tgt_input = tgt
             src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask = create_mask(src, tgt_input, device)
             src_attention_mask = src_attention_mask.to(device)
             tgt_attention_mask = tgt_attention_mask.to(device)
             src_key_padding_mask = src_key_padding_mask.to(device)
             tgt_key_padding_mask = tgt_key_padding_mask.to(device)
-            #print("src_mask")
-            #print(src_mask)
+            """ check masking
+            print()
+            print("src")
+            print(src.size())
+            print(src)
+            print()
+            print("tgt")
+            print(tgt.size())
+            print(tgt)
+            print()
+            print("src_key_padding_mask")
+            print(src_key_padding_mask.size())
+            print(src_key_padding_mask)
+            print()
+            print("tgt_key_padding_mask")
+            print(tgt_key_padding_mask.size())
+            print(tgt_key_padding_mask)
+            print()
+            print("src_attention_mask")
+            print(src_attention_mask.size())
+            print(src_attention_mask)
+            print()
+            print("tgt_attention_mask")
+            print(tgt_attention_mask.size())
+            print(tgt_attention_mask)
+            print()
+            """
 
             logits = transformer(src, tgt_input, src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask)
             # change batch and sequence dim back
@@ -201,7 +208,7 @@ def main():
             # print("tgt_out")
             # print(tgt_out.shape)
             #loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
-            loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
+            loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1)) # changing dimensions back
             # print(f"loss = {loss}")
             #loss = loss_fn(logits, tgt_out)
             #print("back prop...")

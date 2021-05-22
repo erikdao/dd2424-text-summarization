@@ -95,71 +95,64 @@ def main():
     transformer = transformer.to(device)
     print("model init completed...")
     
+
+
     print("start generate...")
-    
     start_time = time.time()
 
     batch = next(iter(test_loader))
-    
-
     src = batch['input'].to(device)
     tgt_real = batch['label']
     # get start of string
     sos_idx = word2index['<SOS>']
     eos_idx = word2index['<EOS>']
-    #ys = torch.Tensor([[sos_idx] for b in range(BATCH_SIZE)])
 
-    
     transformer.eval()
-    
-    
-    trg_init_tok = sos_idx
-    trg = torch.LongTensor([[trg_init_tok]  + [0 for p in range(max_label_seq_length - 1)]]).to(device)
-
+    trg = torch.LongTensor([[sos_idx]]).to(device)
+    translated_sentence = ""
 
     # encoding once
     src_attention_mask, src_key_padding_mask = create_src_masks(src, device)
     memory = transformer.encode(src, src_key_padding_mask, device).to(device)
-    
-    translated_sentence = ""
+    # decoding iteratively
     for i in range(max_label_seq_length):
-        #print("iteration = " + str(i))
-
-        #print(trg)
-        #print(trg.shape)
+        print("iteration = " + str(i))
         if i < max_label_seq_length - 2:
+            size = trg.size(0)
             tgt_attention_mask, tgt_key_padding_mask = create_tgt_masks(trg, device)
             
             pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask).to(device)
-            pred = pred.transpose(0, 1).contiguous()
-            #print(pred.shape)
-            #print(pred)
-            #print()
-
-            pred = F.log_softmax(pred, dim=1).to(device)
-            #print(pred.shape)
-
-             
             
-            pred_word_idx = int(pred[0,i+1, 3:].argmax()) # idx 3 for dim2 to only include eos
+            print(pred.shape)
+            #print(pred)
+            print("transpose")
+            pred = pred.transpose(0, 1).contiguous()
+            print(pred.shape)
+
+            # TODO should we use a softmax
+            #pred = F.log_softmax(pred, dim=1).to(device)
+            #print(pred.shape)
+            pred_word_idx = int(pred.argmax())
             #print("max index")
             #print(pred_word_idx)
-            add_word = index2word[pred_word_idx+3] # 3 so we dont use sos,unk,pad
+            add_word = index2word[pred_word_idx]
             #print("pred word" + add_word)
             translated_sentence += " " + add_word
             if add_word == "<EOS>":
-                trg[0,i+1] = pred_word_idx
+                trg = torch.cat((trg, torch.Tensor([[pred_word_idx]])), 1)
                 break
-
-            #print("concat")
-            #print(trg.shape)
-            #print(torch.LongTensor([[pred_word_idx]]).shape)
-            trg[0,i+1] = pred_word_idx
-            #trg[i] = torch.cat((trg, torch.LongTensor([[pred_word_idx]])))
+            print("idx = "+str(pred_word_idx))
+            print("old TRG")
+            print(trg.shape)
+            print(trg)
+            trg = torch.cat((trg, torch.LongTensor([[pred_word_idx]]).to(device)), 1)
+            print("new TRG")
+            print(trg.shape)
+            print(trg)
         else:
             add_word = "<EOS>"
             translated_sentence += " " + add_word
-            trg[0,i+1] = eos_idx 
+            trg = torch.cat((trg, torch.Tensor([[pred_word_idx]])), 1)
             break
 
         
