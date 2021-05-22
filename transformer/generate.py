@@ -137,7 +137,7 @@ def main():
             #print("pred word" + add_word)
             translated_sentence += " " + add_word
             if add_word == "<EOS>":
-                trg = torch.cat((trg, torch.Tensor([[pred_word_idx]])), 1).to(device)
+                trg = torch.cat((trg, torch.Tensor([[pred_word_idx]]).to(device)), 1).to(device)
                 break
             #print("idx = "+str(pred_word_idx))
             #print("old TRG")
@@ -150,7 +150,7 @@ def main():
         else:
             add_word = "<EOS>"
             translated_sentence += " " + add_word
-            trg = torch.cat((trg, torch.Tensor([[pred_word_idx]])), 1).to(device)
+            trg = torch.cat((trg, torch.Tensor([[pred_word_idx]]).to(device)), 1).to(device)
             break
 
         
