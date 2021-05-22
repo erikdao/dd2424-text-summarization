@@ -35,7 +35,7 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
         load_flag = False
     return load_flag, model, optimizer
 
-def save_checkpoint(transformer, optimizer, train_losses, val_losses, train_accs=None, val_accs=None):
+def save_checkpoint(transformer, optimizer, train_losses, train_accs,val_losses,val_accs):
     state = {'state_dict': transformer.state_dict(),
                 'optimizer': optimizer.state_dict(),
             }
@@ -79,9 +79,36 @@ def create_tgt_masks(tgt):
     tgt_key_padding_mask = (tgt == PAD_IDX).transpose(0, 1)
     return tgt_attention_mask, tgt_key_padding_mask
 
+def accuracy(logits, tgt_input):
+    """
+    Computes batch accuracy of network output compared with target/label
+    Accuracy is sum of correctly guessed words / (sum of sentences lengths - pad mask len)
+    """
+    # TODO: use CPU
+    # output
+    logits_trans = logits.transpose(0, 1).contiguous() # (B,S,V)
+    logprobs = F.log_softmax(logits_trans, dim=1) # (B,S,V)
+    max_idxs = logprobs.argmax(dim=2) # (B,S)
+
+    # compare outputs and target label
+    equals = torch.eq(max_idxs, tgt_input).int() # (B,S)
+
+    # pad away unnecessary comparisons
+    pad_mask = (tgt_input != 0).int() # (B,S)
+    assert equals.shape == pad_mask.shape
+    equals_pad = equals * pad_mask # (B,S)
+
+    lens_per_sentence = torch.count_nonzero(tgt_input,dim=1) # (B), <pad> has idx 0
+    lens_per_batch = torch.sum(lens_per_sentence) # (1)
+    equals_per_sentence = torch.sum(equals_pad, dim=1) # (B)
+    equals_per_batch = torch.sum(equals_per_sentence) # (1)
+    batch_accuracy = float(equals_per_batch / lens_per_batch)
+    return batch_accuracy
+
 def train_epoch(model, train_iter, optimizer, loss_fn):
   model.train()
   losses = 0
+  accs = 0
   for idx, data in tqdm(enumerate(train_iter)):
     optimizer.zero_grad()
 
@@ -99,12 +126,15 @@ def train_epoch(model, train_iter, optimizer, loss_fn):
     loss.backward()
 
     optimizer.step()
+
     losses += loss.item()
-  return losses / len(train_iter)
+    accs += accuracy(logits, tgt_input)
+  return losses / len(train_iter), accs / len(train_iter)
 
 def evaluate(model, val_iter, loss_fn):
   model.eval()
   losses = 0
+  accs = 0
   for idx, data in (enumerate(val_iter)):
     src = data['input'].transpose(0, 1).to(DEVICE)
     tgt = data['label'].transpose(0, 1).to(DEVICE)
@@ -117,7 +147,8 @@ def evaluate(model, val_iter, loss_fn):
     tgt_out = tgt[1:,:]
     loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
     losses += loss.item()
-  return losses / len(val_iter)        
+    accs += accuracy(logits, tgt_input)
+  return losses / len(val_iter), accs / len(val_iter) 
 
 def main():
     torch.use_deterministic_algorithms(False)
@@ -210,11 +241,14 @@ def main():
     for epoch in tqdm(range(EPOCHS)):
         start_time = time.time()
         ######### TRAIN ###########
-        avg_train_loss = train_epoch(transformer, train_loader, optimizer, loss_fn)
+        avg_train_loss, avg_train_acc = \
+            train_epoch(transformer, train_loader, optimizer, loss_fn)
         train_loss_per_epoch.append(avg_train_loss)
+        train_acc_per_epoch.append(avg_train_acc)
         ######### VAL #############
-        avg_val_loss = evaluate(transformer, val_loader, loss_fn)
+        avg_val_loss, avg_val_acc = evaluate(transformer, val_loader, loss_fn)
         val_loss_per_epoch.append(avg_val_loss)
+        val_acc_per_epoch.append(avg_val_acc)
         end_time = time.time()
         ### epoch finished
         print((f"Epoch: {epoch}, Train loss: {avg_train_loss:.3f}, Val loss: {avg_val_loss:.3f}"
@@ -227,8 +261,8 @@ def main():
             )
     
     save_checkpoint(
-        transformer, optimizer, train_loss_per_epoch, 
-        val_loss_per_epoch
+        transformer, optimizer, train_loss_per_epoch, train_acc_per_epoch,
+        val_loss_per_epoch,val_acc_per_epoch
     )
 
 if __name__ == '__main__':
