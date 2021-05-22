@@ -134,7 +134,7 @@ def main():
             #print(pred.shape)
             pred_word_idx = int(pred.argmax())
             #print("max index")
-            #print(pred_word_idx)
+            print("PRED WORD IDX ",pred_word_idx)
             add_word = index2word[pred_word_idx]
             #print("pred word" + add_word)
             translated_sentence += " " + add_word
