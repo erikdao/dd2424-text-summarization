@@ -50,11 +50,11 @@ class SummaryTransformer(nn.Module):
         self.pos_enc_encoder = PositionalEncoding(self.d_model, pos_dropout, max_input_seq_length)
         self.pos_enc_decoder = PositionalEncoding(self.d_model, pos_dropout, max_label_seq_length)
 
-        encoder_norm = nn.LayerNorm(self.d_model).to(device)
+        encoder_norm = nn.LayerNorm(self.d_model).to(self.device)
         encoder_layer = TransformerEncoderLayer(d_model=self.d_model, nhead=nhead, dim_feedforward=dim_feedforward)
         self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=num_encoder_layers, norm=encoder_norm)
         
-        decoder_norm = nn.LayerNorm(self.d_model).to(device)
+        decoder_norm = nn.LayerNorm(self.d_model).to(self.device)
         decoder_layer = TransformerDecoderLayer(d_model=self.d_model, nhead=nhead, dim_feedforward=dim_feedforward)
         self.transformer_decoder = TransformerDecoder(decoder_layer, num_layers=num_decoder_layers, norm=decoder_norm)
     
