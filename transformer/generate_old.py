@@ -14,10 +14,6 @@ N = 6 # default = 6
 DIMFORWARD = 512
 BATCH_SIZE = 1
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-PAD_IDX = 0
-EOS_WORD = "<EOS>"
-
 def load_checkpoint(model, filename='transformer_model'):
     # Note: Input model & optimizer should be pre-defined.  This routine only updates their states.
     if os.path.isfile(filename):
@@ -31,29 +27,8 @@ def load_checkpoint(model, filename='transformer_model'):
         model = None
     return load_flag, model
 
-def generate(model, sentence_idx, word2index, index2word, max_label_seq_length=10):
-    sentence_idx.to(DEVICE)
-    sos_idx = word2index['<SOS>']
-    trg = torch.LongTensor([[sos_idx]]).to(DEVICE)
-    translated_sentence = ""
-
-    for i in range(max_label_seq_length):
-        print(f"generate word {str(i)}")
-        size = trg.size(0)
-        np_mask = torch.triu(torch.ones(size, size)==1).transpose(0,1)
-        np_mask = np_mask.float().masked_fill(np_mask == 0, float('-inf')).masked_fill(np_mask == 1, float(0.0))
-        np_mask = np_mask.to(DEVICE)
-        pred = model(sentence_idx.transpose(0,1), trg, tgt_attention_mask = np_mask)
-        pred_word_idx = int(pred.argmax(dim=2)[-1])
-        print(f"index predicted = {pred_word_idx}")
-        add_word = index2word[pred_word_idx]
-        if add_word==EOS_WORD:
-            break
-        trg = torch.cat((trg,torch.LongTensor([[pred_word_idx]]).to(DEVICE)))
-        translated_sentence += " " + add_word
-    return translated_sentence
-
 def main():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.cuda.empty_cache()
     
     input_dir_tok = "./tokenized-padded"
@@ -111,13 +86,13 @@ def main():
         trans_dropout=0.1, 
         word2index=word2index,
         embeddings=embeddings
-    ).to(DEVICE)
+    ).to(device)
 
     load_flag, transformer = load_checkpoint(transformer, filename=SAVED_MODEL_FILE)
     if not load_flag:
         print("\"Focking idiot!!!!\", Adam 19.05.2021")
         exit()
-    transformer = transformer.to(DEVICE)
+    transformer = transformer.to(device)
     print("model init completed...")
     
 
@@ -126,14 +101,61 @@ def main():
     start_time = time.time()
 
     batch = next(iter(test_loader))
-    src = batch['input'].to(DEVICE)
+    src = batch['input'].to(device)
     tgt_real = batch['label']
-    transformer.eval()
+    # get start of string
+    sos_idx = word2index['<SOS>']
+    eos_idx = word2index['<EOS>']
 
+    transformer.eval()
+    trg = torch.LongTensor([[sos_idx]]).to(device)
+    translated_sentence = ""
+
+    # encoding once
+    src_attention_mask, src_key_padding_mask = create_src_masks(src, device)
+    memory = transformer.encode(src, src_key_padding_mask, device).to(device)
     # decoding iteratively
-    summary = generate(transformer, src, word2index, index2word, max_label_seq_length=10)
+    for i in range(max_label_seq_length):
+        print("iteration = " + str(i))
+        if i < max_label_seq_length - 2:
+            size = trg.size(0)
+            tgt_attention_mask, tgt_key_padding_mask = create_tgt_masks(trg, device)
+            
+            pred = transformer.decode(trg, memory, src_key_padding_mask, tgt_attention_mask, tgt_key_padding_mask).to(device)
+            
+            #print(pred)
+            pred = pred.transpose(0, 1).contiguous()
+            print("transpose pred ", pred.shape)
+
+            # TODO should we use a softmax
+            #pred = F.log_softmax(pred, dim=1).to(device)
+            #print(pred.shape)
+            pred_word_idx = int(pred[:,i,:].argmax())
+            #print("max index")
+            print("PRED WORD IDX ",pred_word_idx)
+            add_word = index2word[pred_word_idx]
+            #print("pred word" + add_word)
+            translated_sentence += " " + add_word
+            if add_word == "<EOS>":
+                trg = torch.cat((trg, torch.Tensor([[pred_word_idx]]).to(device)), 1).to(device)
+                break
+            #print("idx = "+str(pred_word_idx))
+            #print("old TRG")
+            #print(trg.shape)
+            #print(trg)
+            trg = torch.cat((trg, torch.LongTensor([[pred_word_idx]]).to(device)), 1)
+            #print("new TRG")
+            #print(trg.shape)
+            #print(trg)
+        else:
+            add_word = "<EOS>"
+            translated_sentence += " " + add_word
+            trg = torch.cat((trg, torch.Tensor([[pred_word_idx]]).to(device)), 1).to(device)
+            break
+
+        
     print("\nGENERATED: ")
-    print(summary)
+    print(translated_sentence)
     print("REAL: ")
     print(" ".join( [index2word[i] for i in tgt_real[0].tolist()] ))
     
