@@ -83,6 +83,8 @@ def train_epoch(model, train_iter, optimizer, loss_fn):
   model.train()
   losses = 0
   for idx, data in tqdm(enumerate(train_iter)):
+    optimizer.zero_grad()
+
     src = data['input'].transpose(0, 1).to(DEVICE)
     tgt = data['label'].transpose(0, 1).to(DEVICE)
     
@@ -91,8 +93,6 @@ def train_epoch(model, train_iter, optimizer, loss_fn):
     src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input)
 
     logits = model(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask)
-
-    optimizer.zero_grad()
 
     tgt_out = tgt[1:,:]
     loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
