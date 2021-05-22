@@ -9,15 +9,15 @@ from transformer.transformer_model import *
 
 EMBEDDING_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/preprocess/glove.6B.50d.txt'
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
-SAVED_LOSS_LOG_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/loss_loggs'
+SAVED_LOSS_LOG_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/loss_loggs.json'
 SAVE_EPOCHS = 1
-EPOCHS = 16
+EPOCHS = 2
 HEADS = 10 # default = 8 have to be dividable by d_model
 N = 6 # default = 6
 DIMFORWARD = 512
 LEARN_RATE = 0.001
 BATCH_SIZE = 50
-TEST = False
+TEST = True
 
 def load_checkpoint(model, optimizer, filename='transformer_model'):
     # Note: Input model & optimizer should be pre-defined.  This routine only updates their states.
@@ -32,22 +32,21 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
         load_flag = False
     return load_flag, model, optimizer
 
-def save_checkpoint(transformer, optimizer, train_loss, val_loss,train_acc,val_acc, epoch):
+def save_checkpoint(transformer, optimizer, train_losses, val_losses,train_accs,val_accs):
     state = {'state_dict': transformer.state_dict(),
                 'optimizer': optimizer.state_dict(),
             }
 
     torch.save(state, SAVED_MODEL_FILE)
-    """
     loss_log = {
-                'train_loss': tloss+train_loss_per_epoch,
-                'val_loss': vloss+val_loss_per_epoch
-                }
-    """
-    entry = "epoch {}, train loss {}, val loss {}, train acc {}, val acc {}"\
-        .format(epoch, train_loss, val_loss, train_acc,val_acc)
-    with open(SAVED_LOSS_LOG_FILE, 'a') as outfile:
-        outfile.write(entry)
+        'train_loss': train_losses,
+        'val_loss': val_losses,
+        'train_acc': train_accs,
+        'val_acc': val_accs,
+    }
+    with open(SAVED_LOSS_LOG_FILE, 'w') as outfile:
+        json.dump(loss_log, outfile)
+    
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -82,9 +81,8 @@ def main():
         mappings_val = {'inputs': inputs[327200:327200+40900], 'labels': labels[327200:327200+40900]}
         mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'labels': labels[327200+40900:327200+2*40900]}
     else:
-        mappings_train = {'inputs': inputs[:10], 'labels': labels[:10]}
-        mappings_val = {'inputs': inputs[10:20], 'labels': labels[10:20]}
-        mappings_test = {'inputs': inputs[30:40], 'labels': labels[30:40]}
+        mappings_train = {'inputs': inputs[:10000], 'labels': labels[:10000]}
+        mappings_val = {'inputs': inputs[10000:10050], 'labels': labels[10000:10050]}
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
@@ -104,17 +102,6 @@ def main():
         batch_size = BATCH_SIZE,
         shuffle=True
     )
-    """
-    print("Loading test loader...")
-    test_loader = create_dataloader_glove(
-        mappings = mappings_test,
-        word2index = word2index,
-        embeddings = embeddings,
-        word_emb_size = glove_word_emb_size,
-        batch_size = 10,
-        shuffle=True
-    )
-    """
 
     # https://pytorch.org/tutorials/beginner/translation_transformer.html
     print("Init. model...")
@@ -149,11 +136,12 @@ def main():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
         print("init loss histories")
-    train_loss_per_epoch = []
-    val_loss_per_epoch = []
+        train_loss_per_epoch = []
+        val_loss_per_epoch = []
+        train_acc_per_epoch = []
+        val_acc_per_epoch = []
 
     transformer = transformer.to(device)
-
     print("model init completed...")
     loss_fn = nn.CrossEntropyLoss()
     
@@ -166,21 +154,40 @@ def main():
         for idx, data in tqdm(enumerate(train_loader)): #batches
             src = data['input'].to(device) # indecies
             tgt = data['label'].to(device)
-            
 
-            # print("input shape")
-            # print(tgt.shape)
-            # print()
-
-            #tgt_input = tgt[:-1, :]
             tgt_input = tgt
             src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask = create_mask(src, tgt_input, device)
             src_attention_mask = src_attention_mask.to(device)
             tgt_attention_mask = tgt_attention_mask.to(device)
             src_key_padding_mask = src_key_padding_mask.to(device)
             tgt_key_padding_mask = tgt_key_padding_mask.to(device)
-            #print("src_mask")
-            #print(src_mask)
+            """ check masking
+            print()
+            print("src")
+            print(src.size())
+            print(src)
+            print()
+            print("tgt")
+            print(tgt.size())
+            print(tgt)
+            print()
+            print("src_key_padding_mask")
+            print(src_key_padding_mask.size())
+            print(src_key_padding_mask)
+            print()
+            print("tgt_key_padding_mask")
+            print(tgt_key_padding_mask.size())
+            print(tgt_key_padding_mask)
+            print()
+            print("src_attention_mask")
+            print(src_attention_mask.size())
+            print(src_attention_mask)
+            print()
+            print("tgt_attention_mask")
+            print(tgt_attention_mask.size())
+            print(tgt_attention_mask)
+            print()
+            """
 
             logits = transformer(src, tgt_input, src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask)
             # change batch and sequence dim back
@@ -196,7 +203,7 @@ def main():
             # print("tgt_out")
             # print(tgt_out.shape)
             #loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
-            loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
+            loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1)) # changing dimensions back
             # print(f"loss = {loss}")
             #loss = loss_fn(logits, tgt_out)
             #print("back prop...")
@@ -206,8 +213,12 @@ def main():
             losses += loss.item()
             #print(f"loss = {losses}\r", end="")
 
+        # TRAIN LOSS AND ACC
         avg_train_loss = losses / len(train_loader)
+        train_loss_per_epoch.append(avg_train_loss)
         train_acc = None # TODO
+        train_acc_per_epoch.append(train_acc)
+
         ######### VAL #############
         transformer.eval()
         losses = 0
@@ -229,8 +240,14 @@ def main():
             tgt_out = tgt_out.transpose(0, 1).contiguous()
             loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
             losses += loss.item()
+
+        # VAL LOSS AND ACC
         avg_val_loss = losses / len(val_loader)
         val_acc = None # TODO
+        val_loss_per_epoch.append(avg_val_loss)
+        val_acc_per_epoch.append(val_acc)
+
+
         ######### VAL #############
         transformer.eval()
         losses = 0
@@ -263,14 +280,14 @@ def main():
         if epoch % SAVE_EPOCHS == 0:
             save_checkpoint(
                 transformer, optimizer, avg_train_loss, 
-                avg_val_loss, train_acc, val_acc, epoch
+                avg_val_loss, train_acc, val_acc
             )
     # save final outcome
     #train_loss_per_epoch.append(avg_train_loss)
     #val_loss_per_epoch.append(avg_val_loss)
     save_checkpoint(
-        transformer, optimizer, avg_train_loss, 
-        avg_val_loss, train_acc, val_acc, EPOCHS - 1
+        transformer, optimizer, train_loss_per_epoch, 
+        val_loss_per_epoch, train_acc_per_epoch, val_acc_per_epoch
     )
 
 if __name__ == '__main__':

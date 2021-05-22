@@ -18,7 +18,7 @@ from utils.glove_embedding import *
 import torch.nn.functional as F
 
 torch.manual_seed(0)
-torch.use_deterministic_algorithms(True)
+torch.use_deterministic_algorithms(False)
 
 class SummaryTransformer(nn.Module):
     def __init__(self, 
@@ -35,7 +35,6 @@ class SummaryTransformer(nn.Module):
                 word2index,
                 embeddings):
         super().__init__()
-        torch.use_deterministic_algorithms(False)
         self.model_type = 'Transformer'
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.vocabulary_size = vocab_size
@@ -51,17 +50,19 @@ class SummaryTransformer(nn.Module):
         self.pos_enc_encoder = PositionalEncoding(self.d_model, pos_dropout, max_input_seq_length)
         self.pos_enc_decoder = PositionalEncoding(self.d_model, pos_dropout, max_label_seq_length)
 
+        encoder_norm = nn.LayerNorm(self.d_model)
         encoder_layer = TransformerEncoderLayer(d_model=self.d_model, nhead=nhead, dim_feedforward=dim_feedforward)
-        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
+        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=num_encoder_layers, norm=encoder_norm)
+        
+        decoder_norm = nn.LayerNorm(self.d_model)
         decoder_layer = TransformerDecoderLayer(d_model=self.d_model, nhead=nhead, dim_feedforward=dim_feedforward)
-        self.transformer_decoder = TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
+        self.transformer_decoder = TransformerDecoder(decoder_layer, num_layers=num_decoder_layers, norm=decoder_norm)
     
         self.generator = nn.Linear(self.d_model, vocab_size)
     
 
     def forward(self, src, tgt, src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        torch.use_deterministic_algorithms(False)
         batch_size = src.shape[0]
         src = src.to(device)
         tgt = tgt.to(device)
@@ -103,8 +104,11 @@ class SummaryTransformer(nn.Module):
         #print("encoding...")
         memory = self.transformer_encoder(src_emb, mask=None, src_key_padding_mask=src_key_padding_mask)
         outs = self.transformer_decoder(tgt=tgt_emb, memory=memory, tgt_mask=tgt_attention_mask, memory_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
-        #print("generate output...")
-        return self.generator(outs)
+        
+        result = self.generator(outs)
+        #print("result")
+        #print(result.shape)
+        return result
 
     
     def encode(self, src, src_key_padding_mask, DEVICE):
@@ -121,7 +125,10 @@ class SummaryTransformer(nn.Module):
         tgt_emb = self.sequence_to_first_dimension(tgt_emb, batch_size)
         tgt_emb = self.pos_enc_decoder(tgt_emb)
         outs = self.transformer_decoder(tgt=tgt_emb, memory=memory, tgt_mask=tgt_attention_mask, memory_key_padding_mask=src_key_padding_mask, tgt_key_padding_mask=tgt_key_padding_mask)
-        return self.generator(outs)
+        result = self.generator(outs)
+        #print("result")
+        #print(result.shape)
+        return result
 
 
 

@@ -5,7 +5,7 @@ from tqdm import tqdm
 # about 84 % less than 128 words
 # will truncate longer sentences to MAX_SENTENCE_LEN words
 MAX_SENTENCE_LEN = 128
-MAX_LABEL_LEN = 10
+MAX_LABEL_LEN = 15
 def main():
     input_dir = "./tokenized"
     mappings_pickle = input_dir + "/tokenized"
