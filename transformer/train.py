@@ -89,14 +89,15 @@ def accuracy(logits, tgt_input):
     logits_trans = logits.transpose(0, 1).contiguous() # (B,S,V)
     logprobs = F.log_softmax(logits_trans, dim=1) # (B,S,V)
     max_idxs = logprobs.argmax(dim=2) # (B,S)
+    max_idxs = max_idxs[:-1,:]
 
     # compare outputs and target label
-    equals = torch.eq(max_idxs, tgt_input).int() # (B,S)
+    equals = torch.eq(max_idxs, tgt_input).int() # (B,S-1)
 
     # pad away unnecessary comparisons
-    pad_mask = (tgt_input != 0).int() # (B,S)
+    pad_mask = (tgt_input != 0).int() # (B,S-1)
     assert equals.shape == pad_mask.shape
-    equals_pad = equals * pad_mask # (B,S)
+    equals_pad = equals * pad_mask # (B,S-1)
 
     lens_per_sentence = torch.count_nonzero(tgt_input,dim=1) # (B), <pad> has idx 0
     lens_per_batch = torch.sum(lens_per_sentence) # (1)
