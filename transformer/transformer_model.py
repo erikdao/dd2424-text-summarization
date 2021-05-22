@@ -43,10 +43,6 @@ class SummaryTransformer(nn.Module):
         self.embed_src = GloveEmbedding(embeddings, word2index)
         self.embed_tgt = GloveEmbedding(embeddings, word2index)
         
-        # add random learnable part to embedding GLOVE
-        self.word_emb_extention = nn.Embedding(self.vocabulary_size, self.word_emb_size)
-        self.word_emb_extention.weight = nn.Parameter(torch.from_numpy(embeddings).to(self.device), requires_grad=False)
-
         self.pos_enc_encoder = PositionalEncoding(self.d_model, pos_dropout, max_input_seq_length)
         self.pos_enc_decoder = PositionalEncoding(self.d_model, pos_dropout, max_label_seq_length)
 
@@ -61,45 +57,15 @@ class SummaryTransformer(nn.Module):
         self.generator = nn.Linear(self.d_model, vocab_size)
     
 
-    def forward(self, src, tgt, src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask):
+    def forward(self, src, tgt, src_attention_mask=None, tgt_attention_mask=None, src_key_padding_mask=None, tgt_key_padding_mask=None):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         batch_size = src.shape[0]
         src = src.to(device)
         tgt = tgt.to(device)
         src_emb = self.embed_src.forward((src))
         tgt_emb = self.embed_tgt.forward((tgt))
-        """
-        print("src_emb")
-        print(src_emb.shape)
-        print("tgt_emb")
-        print(tgt_emb.shape)
-        """
-        src_emb = self.sequence_to_first_dimension(src_emb, batch_size)
-        tgt_emb = self.sequence_to_first_dimension(tgt_emb, batch_size)
-        """
-        print("src_emb transposed")
-        print(src_emb.shape)
-        print("tgt_emb transposed")
-        print(tgt_emb.shape)
-        """
         src_emb = self.pos_enc_encoder(src_emb)
         tgt_emb = self.pos_enc_decoder(tgt_emb)
-        """
-        print("src_emb + positional")
-        print(src_emb.shape)
-        print("tgt_emb + positional")
-        print(tgt_emb.shape)
-        print()
-        print("check masks")
-        print("src_key_padding_mask")
-        print(src_key_padding_mask.shape)
-        print("tgt_attention_mask")
-        print(tgt_attention_mask.shape)
-        print("src_key_padding_mask")
-        print(src_key_padding_mask.shape)
-        print("tgt_key_padding_mask")
-        print(tgt_key_padding_mask.shape)
-        """
         
         #print("encoding...")
         memory = self.transformer_encoder(src_emb, mask=None, src_key_padding_mask=src_key_padding_mask)
@@ -145,31 +111,4 @@ class SummaryTransformer(nn.Module):
 
 
 
-# helper function
-def generate_square_subsequent_mask(sz, DEVICE):
-    mask = (torch.triu(torch.ones((sz, sz), device=DEVICE)) == 1).transpose(0, 1)
-    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-    return mask
 
-def create_mask(src, tgt, DEVICE):
-    src_seq_len = src.shape[1]
-    tgt_seq_len = tgt.shape[1]
-
-    tgt_attention_mask = generate_square_subsequent_mask(tgt_seq_len, DEVICE=DEVICE)
-    src_attention_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
-
-    src_padding_mask = (src == 0)#.transpose(0, 1)
-    tgt_padding_mask = (tgt == 0)#.transpose(0, 1)
-    return src_attention_mask, tgt_attention_mask, src_padding_mask, tgt_padding_mask
-
-def create_src_masks(src, DEVICE):
-    src_seq_len = src.shape[1]
-    src_attention_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
-    src_key_padding_mask = (src == 0)
-    return src_attention_mask, src_key_padding_mask
-
-def create_tgt_masks(tgt, DEVICE):
-    tgt_seq_len = tgt.shape[1]
-    tgt_attention_mask = generate_square_subsequent_mask(tgt_seq_len, DEVICE)
-    tgt_key_padding_mask = (tgt == 0)
-    return tgt_attention_mask, tgt_key_padding_mask
