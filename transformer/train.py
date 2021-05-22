@@ -85,13 +85,13 @@ def accuracy(logits, tgt_input):
     Accuracy is sum of correctly guessed words / (sum of sentences lengths - pad mask len)
     """
     # TODO: use CPU
+    tgt_input = logits.transpose(0, 1).contiguous() # (B,S)
     # output
     logits_trans = logits.transpose(0, 1).contiguous() # (B,S,V)
     logprobs = F.log_softmax(logits_trans, dim=1) # (B,S,V)
     max_idxs = logprobs.argmax(dim=2) # (B,S)
-    print("max_idxs ",max_idxs.shape)
-    print("tgt_input ",tgt_input.shape)
-    max_idxs = max_idxs[:-1,:]
+    #print("max_idxs ",max_idxs.shape)
+    #print("tgt_input ",tgt_input.shape)
 
     # compare outputs and target label
     equals = torch.eq(max_idxs, tgt_input).int() # (B,S-1)
