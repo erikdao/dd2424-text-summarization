@@ -47,6 +47,26 @@ def save_checkpoint(transformer, optimizer, train_losses, val_losses,train_accs,
     with open(SAVED_LOSS_LOG_FILE, 'w') as outfile:
         json.dump(loss_log, outfile)
     
+def accuracy(logits, tgt_input):
+    """
+    Computes batch accuracy of network output compared with target/label
+    Accuracy is sum of correctly guessed words / (sum of sentences lengths - pad mask len) 
+    """
+    # TODO: use CPU
+    logits_trans = logits.transpose(0, 1).contiguous() # (B,S,V)
+    logprobs = F.log_softmax(logits_trans, dim=1) # (B,S,V)
+    max_idxs = logprobs.argmax(dim=2) # (B,S)
+    equals = torch.eq(max_idxs, tgt_input).int() # (B,S)
+    pad_mask = (tgt_input != 0).int() # (B,S)
+    assert equals.shape == pad_mask.shape
+    equals_pad = equals * pad_mask # (B,S)
+    lens_per_sentence = torch.count_nonzero(tgt_input,dim=1) # (B), <pad> has idx 0
+    lens_per_batch = torch.sum(lens_per_sentence) # (1)
+    equals_per_sentence = torch.sum(equals_pad, dim=1) # (B)
+    equals_per_batch = torch.sum(equals_sums) # (1)
+    batch_accuracy = float(equals_per_batch / lens_per_batch)
+    return batch_accuracy
+
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -150,6 +170,7 @@ def main():
     for epoch in tqdm(range(EPOCHS)):
         transformer.train()
         losses = 0
+        accuracies = 0
         start_time = time.time()
         for idx, data in tqdm(enumerate(train_loader)): #batches
             src = data['input'].to(device) # indecies (B,S)
@@ -211,26 +232,19 @@ def main():
 
             optimizer.step()
             losses += loss.item()
-
-            # accuracy, TODO: use CPU
-            """
-            logits_trans = logits.transpose(0, 1).contiguous() # (B,S,V)
-            logprobs = F.log_softmax(logits_trans, dim=1) # (B,S,V)
-            max_idxs = logprobs.argmax(dim=2) # (B,S)
-            equals = torch.eq(max_idxs, tgt_input).float() # (B,S)
-            pad_mask = torch.eq(tgt_input, 
-            batch_acc = 
-            """
+            accuracies += accuracy(logits, tgt_input)
+           
 
         # TRAIN LOSS AND ACC
         avg_train_loss = losses / len(train_loader)
         train_loss_per_epoch.append(avg_train_loss)
-        train_acc = None # TODO
+        train_acc = accuracies / len(train_loader) 
         train_acc_per_epoch.append(train_acc)
 
         ######### VAL #############
         transformer.eval()
         losses = 0
+        accuracies = 0
         #print("EVALUATING...")
         for idx, data in enumerate(val_loader): 
             src = data['input'].to(device) # indexes
@@ -249,37 +263,13 @@ def main():
             tgt_out = tgt_out.transpose(0, 1).contiguous()
             loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
             losses += loss.item()
+            accuracies += accuracy(logits, tgt_input)
 
         # VAL LOSS AND ACC
         avg_val_loss = losses / len(val_loader)
-        val_acc = None # TODO
         val_loss_per_epoch.append(avg_val_loss)
+        val_acc = accuracies / len(val_loader) 
         val_acc_per_epoch.append(val_acc)
-
-
-        ######### VAL #############
-        transformer.eval()
-        losses = 0
-        #print("EVALUATING...")
-        for idx, data in enumerate(val_loader): 
-            src = data['input'].to(device) # indexes
-            tgt = data['label'].to(device)
-
-            tgt_input = tgt
-            src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input, device)
-            #print("src_mask")
-            #print(src_mask)
-
-            logits = transformer(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask)
-            # change batch and sequence dim back
-            
-            #tgt_out = tgt[1:,:]
-            tgt_out = tgt
-            tgt_out = tgt_out.transpose(0, 1).contiguous()
-            loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
-            losses += loss.item()
-        avg_val_loss = losses / len(val_loader)
-        val_acc = None # TODO
         
         ### epoch finished        
         end_time = time.time()
@@ -291,6 +281,9 @@ def main():
                 transformer, optimizer, avg_train_loss, 
                 avg_val_loss, train_acc, val_acc
             )
+
+    ### END TRAIN LOOP
+
     # save final outcome
     #train_loss_per_epoch.append(avg_train_loss)
     #val_loss_per_epoch.append(avg_val_loss)
