@@ -135,11 +135,11 @@ def main():
         for p in transformer.generator.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
-        print("init loss histories")
-        train_loss_per_epoch = []
-        val_loss_per_epoch = []
-        train_acc_per_epoch = []
-        val_acc_per_epoch = []
+    print("init loss histories")
+    train_loss_per_epoch = []
+    val_loss_per_epoch = []
+    train_acc_per_epoch = []
+    val_acc_per_epoch = []
 
     transformer = transformer.to(device)
     print("model init completed...")
@@ -274,7 +274,7 @@ def main():
         
         ### epoch finished        
         end_time = time.time()
-        print((f"Epoch: {epoch}, Train loss: {avg_train_loss:.3f}, Val loss: {avg_val_loss:.3f}, "
+        print((f"Epoch: {epoch}, Train loss: {avg_train_loss:.3f}, Val loss: {avg_val_loss:.3f}, train_acc {train_acc}, val acc {val_acc}"
           f"Epoch time = {(end_time - start_time):.3f}s"))
 
         if epoch % SAVE_EPOCHS == 0:
