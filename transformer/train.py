@@ -260,8 +260,8 @@ def main():
         ### save epoch every X epochs
         if epoch % SAVE_EPOCHS == 0:
             save_checkpoint(
-                transformer, optimizer, avg_train_loss, 
-                avg_val_loss
+                transformer, optimizer, train_loss_per_epoch, train_acc_per_epoch,
+                val_loss_per_epoch,val_acc_per_epoch
             )
     
     save_checkpoint(
