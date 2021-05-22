@@ -143,7 +143,7 @@ def main():
 
     transformer = transformer.to(device)
     print("model init completed...")
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.CrossEntropyLoss(ignore_index=0)
     
 
     print("start training...")
@@ -152,8 +152,8 @@ def main():
         losses = 0
         start_time = time.time()
         for idx, data in tqdm(enumerate(train_loader)): #batches
-            src = data['input'].to(device) # indecies
-            tgt = data['label'].to(device)
+            src = data['input'].to(device) # indecies (B,S)
+            tgt = data['label'].to(device) # (B,S)
 
             tgt_input = tgt
             src_attention_mask, tgt_attention_mask, src_key_padding_mask, tgt_key_padding_mask = create_mask(src, tgt_input, device)
@@ -211,7 +211,16 @@ def main():
 
             optimizer.step()
             losses += loss.item()
-            #print(f"loss = {losses}\r", end="")
+
+            # accuracy, TODO: use CPU
+            """
+            logits_trans = logits.transpose(0, 1).contiguous() # (B,S,V)
+            logprobs = F.log_softmax(logits_trans, dim=1) # (B,S,V)
+            max_idxs = logprobs.argmax(dim=2) # (B,S)
+            equals = torch.eq(max_idxs, tgt_input).float() # (B,S)
+            pad_mask = torch.eq(tgt_input, 
+            batch_acc = 
+            """
 
         # TRAIN LOSS AND ACC
         avg_train_loss = losses / len(train_loader)
