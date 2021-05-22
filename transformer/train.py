@@ -9,7 +9,7 @@ from transformer.transformer_model import *
 
 EMBEDDING_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/preprocess/glove.6B.50d.txt'
 SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/transformer_model'
-SAVED_LOSS_LOG_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/loss_loggs.json'
+SAVED_LOSS_LOG_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summarization/transformer/loss_loggs'
 SAVE_EPOCHS = 1
 EPOCHS = 16
 HEADS = 10 # default = 8 have to be dividable by d_model
@@ -32,27 +32,22 @@ def load_checkpoint(model, optimizer, filename='transformer_model'):
         load_flag = False
     return load_flag, model, optimizer
 
-def save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch):
+def save_checkpoint(transformer, optimizer, train_loss, val_loss,train_acc,val_acc, epoch):
     state = {'state_dict': transformer.state_dict(),
                 'optimizer': optimizer.state_dict(),
             }
 
-    if os.path.isfile(SAVED_LOSS_LOG_FILE):
-        with open(SAVED_LOSS_LOG_FILE) as outfile:
-            losses = json.load(SAVED_LOSS_LOG_FILE)
-            tloss = losses['train_loss']
-            vloss = losses['val_loss']
-    else:
-        tloss = []
-        vloss = []
+    torch.save(state, SAVED_MODEL_FILE)
+    """
     loss_log = {
                 'train_loss': tloss+train_loss_per_epoch,
                 'val_loss': vloss+val_loss_per_epoch
                 }
-    with open(SAVED_LOSS_LOG_FILE, 'w') as outfile:
-        json.dump(loss_log, outfile)
-    torch.save(state, SAVED_MODEL_FILE)
-    
+    """
+    entry = "epoch {}, train loss {}, val loss {}, train acc {}, val acc {}"\
+        .format(epoch, train_loss, val_loss, train_acc,val_acc)
+    with open(SAVED_LOSS_LOG_FILE, 'a') as outfile:
+        outfile.write(entry)
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -212,6 +207,7 @@ def main():
             #print(f"loss = {losses}\r", end="")
 
         avg_train_loss = losses / len(train_loader)
+        train_acc = None # TODO
         ######### VAL #############
         transformer.eval()
         losses = 0
@@ -234,6 +230,30 @@ def main():
             loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
             losses += loss.item()
         avg_val_loss = losses / len(val_loader)
+        val_acc = None # TODO
+        ######### VAL #############
+        transformer.eval()
+        losses = 0
+        #print("EVALUATING...")
+        for idx, data in enumerate(val_loader): 
+            src = data['input'].to(device) # indexes
+            tgt = data['label'].to(device)
+
+            tgt_input = tgt
+            src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input, device)
+            #print("src_mask")
+            #print(src_mask)
+
+            logits = transformer(src, tgt_input, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask)
+            # change batch and sequence dim back
+            
+            #tgt_out = tgt[1:,:]
+            tgt_out = tgt
+            tgt_out = tgt_out.transpose(0, 1).contiguous()
+            loss = loss_fn(logits.view(-1, logits.shape[-1]), tgt_out.view(-1))
+            losses += loss.item()
+        avg_val_loss = losses / len(val_loader)
+        val_acc = None # TODO
         
         ### epoch finished        
         end_time = time.time()
@@ -241,11 +261,17 @@ def main():
           f"Epoch time = {(end_time - start_time):.3f}s"))
 
         if epoch % SAVE_EPOCHS == 0:
-            save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch)
+            save_checkpoint(
+                transformer, optimizer, avg_train_loss, 
+                avg_val_loss, train_acc, val_acc, epoch
+            )
     # save final outcome
-    train_loss_per_epoch.append(avg_train_loss)
-    val_loss_per_epoch.append(avg_val_loss)
-    save_checkpoint(transformer, optimizer, train_loss_per_epoch, val_loss_per_epoch)        
+    #train_loss_per_epoch.append(avg_train_loss)
+    #val_loss_per_epoch.append(avg_val_loss)
+    save_checkpoint(
+        transformer, optimizer, avg_train_loss, 
+        avg_val_loss, train_acc, val_acc, EPOCHS - 1
+    )
 
 if __name__ == '__main__':
     np.random.seed(420)
