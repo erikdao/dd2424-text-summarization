@@ -89,6 +89,8 @@ def accuracy(logits, tgt_input):
     logits_trans = logits.transpose(0, 1).contiguous() # (B,S,V)
     logprobs = F.log_softmax(logits_trans, dim=1) # (B,S,V)
     max_idxs = logprobs.argmax(dim=2) # (B,S)
+    print("max_idxs ",max_idxs.shape)
+    print("tgt_input ",tgt_input.shape)
     max_idxs = max_idxs[:-1,:]
 
     # compare outputs and target label
