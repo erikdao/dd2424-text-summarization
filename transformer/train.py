@@ -69,7 +69,7 @@ def accuracy(logits, tgt_input):
     lens_per_sentence = torch.count_nonzero(tgt_input,dim=1) # (B), <pad> has idx 0
     lens_per_batch = torch.sum(lens_per_sentence) # (1)
     equals_per_sentence = torch.sum(equals_pad, dim=1) # (B)
-    equals_per_batch = torch.sum(equals_sums) # (1)
+    equals_per_batch = torch.sum(equals_per_sentence) # (1)
     batch_accuracy = float(equals_per_batch / lens_per_batch)
     return batch_accuracy
 
