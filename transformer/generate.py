@@ -80,8 +80,8 @@ def main():
     inputs = mappings['inputs']
     labels = mappings['labels']
 
-    start = 327200
-    mappings_test = {'inputs': inputs[start+1*BATCH_SIZE:start+3*BATCH_SIZE], 'labels': labels[start + 1*BATCH_SIZE:start +3*BATCH_SIZE]}
+    start = 327200+40900 
+    mappings_test = {'inputs': inputs[start:start+2*BATCH_SIZE], 'labels': labels[start:start +2*BATCH_SIZE]}
 
     #mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'lab    els': labels[327200+40900:327200+2*40900]}
     print("Loading test loader...")
@@ -127,7 +127,9 @@ def main():
 
     batch = next(iter(test_loader))
     src = batch['input'].to(DEVICE)
+    print("source shape: ",src.shape)
     tgt_real = batch['label']
+    print("tgt real shape: ",src.shape)
     transformer.eval()
 
     # decoding iteratively
