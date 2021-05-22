@@ -255,7 +255,7 @@ def main():
         val_acc_per_epoch.append(avg_val_acc)
         end_time = time.time()
         ### epoch finished
-        print((f"Epoch: {epoch}, Train loss: {avg_train_loss:.3f}, Val loss: {avg_val_loss:.3f}"
+        print((f"Epoch: {epoch}, Train loss: {avg_train_loss:.3f}, Train acc: {avg_train_acc:.3f}, Val loss: {avg_val_loss:.3f}, Val acc: {avg_val_acc:.3f}"
             f"Epoch time = {(end_time - start_time):.3f}s"))
         ### save epoch every X epochs
         if epoch % SAVE_EPOCHS == 0:
