@@ -134,7 +134,7 @@ def main():
         # decoding iteratively
         for i in range(BATCH_SIZE):
             src_i = src[i]
-            src_i_words = [ index2word[num] for num in list(src_i)]
+            src_i_words = [ index2word[int(num)] for num in list(src_i)]
             print("SRC I: ",src_i_words)
             src_i = torch.unsqueeze(src_i,0) # (1,S)
             summary = generate(transformer, src_i, word2index, index2word, max_label_seq_length=10)
