@@ -38,14 +38,14 @@ def generate(model, sentence_idx, word2index, index2word, max_label_seq_length=1
     translated_sentence = ""
 
     for i in range(max_label_seq_length):
-        print(f"generate word {str(i)}")
+        #print(f"generate word {str(i)}")
         size = trg.size(0)
         np_mask = torch.triu(torch.ones(size, size)==1).transpose(0,1)
         np_mask = np_mask.float().masked_fill(np_mask == 0, float('-inf')).masked_fill(np_mask == 1, float(0.0))
         np_mask = np_mask.to(DEVICE)
         pred = model(sentence_idx.transpose(0,1), trg, tgt_attention_mask = np_mask)
         pred_word_idx = int(pred.argmax(dim=2)[-1])
-        print(f"index predicted = {pred_word_idx}")
+        #print(f"index predicted = {pred_word_idx}")
         add_word = index2word[pred_word_idx]
         if add_word==EOS_WORD:
             break
@@ -125,21 +125,19 @@ def main():
     print("start generate...")
     start_time = time.time()
 
-    batch = next(iter(test_loader))
-    src = batch['input'].to(DEVICE)
-    print("source shape: ",src.shape)
-    tgt_real = batch['label']
-    print("tgt real shape: ",src.shape)
-    transformer.eval()
+    for idx, batch in tqdm(enumerate(train_iter)):
+        src = batch['input'].to(DEVICE) # (B,S)
+        tgt_real = batch['label'] # (B,S)
+        transformer.eval()
 
-    # decoding iteratively
-    summary = generate(transformer, src, word2index, index2word, max_label_seq_length=10)
-    print("\nGENERATED: ")
-    print(summary)
-    print("REAL: ")
-    print(" ".join( [index2word[i] for i in tgt_real[0].tolist()] ))
-    
-
+        # decoding iteratively
+        for i in range(BATCH_SIZE):
+            src_i = torch.unsqueeze(src[i],0) # (1,S)
+            summary = generate(transformer, src_i, word2index, index2word, max_label_seq_length=10)
+            print("\nGENERATED: ")
+            print(summary)
+            print("REAL: ")
+            print(" ".join( [index2word[i] for i in tgt_real[0].tolist()] ))
 
     end_time = time.time()
         
