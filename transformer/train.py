@@ -81,8 +81,8 @@ def main():
         mappings_val = {'inputs': inputs[327200:327200+40900], 'labels': labels[327200:327200+40900]}
         mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'labels': labels[327200+40900:327200+2*40900]}
     else:
-        mappings_train = {'inputs': inputs[:10000], 'labels': labels[:10000]}
-        mappings_val = {'inputs': inputs[10000:10050], 'labels': labels[10000:10050]}
+        mappings_train = {'inputs': inputs[:100], 'labels': labels[:100]}
+        mappings_val = {'inputs': inputs[200:300], 'labels': labels[200:300]}
 
     print("Loading train loader...")
     train_loader = create_dataloader_glove(
