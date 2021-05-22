@@ -150,7 +150,7 @@ def main():
         else:
             add_word = "<EOS>"
             translated_sentence += " " + add_word
-            trg = torch.cat((trg, torch.Tensor([[pred_word_idx]])), 1)
+            trg = torch.cat((trg, torch.Tensor([[pred_word_idx]])), 1).to(device)
             break
 
         
