@@ -263,7 +263,7 @@ def main():
     print("model init completed...")
     
     print("start training...")
-    warmup = True
+    warmup = not TEST
     for epoch in tqdm(range(EPOCHS)):
         start_time = time.time()
         ######### TRAIN ###########
