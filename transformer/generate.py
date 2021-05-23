@@ -81,7 +81,12 @@ def main():
     labels = mappings['labels']
 
     start = 327200+40900 
-    mappings_test = {'inputs': inputs[start:start+2*BATCH_SIZE], 'labels': labels[start:start +2*BATCH_SIZE]}
+    end = len(inputs)
+    choices = list(np.random.choice(np.arange(start,end), size=BATCH_SIZE, replace=False))
+    inputs_choice = map(inputs.__getitem__, choices)
+    labels_choice = map(labels.__getitem__, choices)
+    #mappings_test = {'inputs': inputs[start:start+2*BATCH_SIZE], 'labels': labels[start:start +2*BATCH_SIZE]}
+    mappings_test = {'inputs': inputs_choice, 'labels': labels_choice}
 
     #mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'lab    els': labels[327200+40900:327200+2*40900]}
     print("Loading test loader...")
