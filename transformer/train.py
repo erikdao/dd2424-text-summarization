@@ -139,7 +139,7 @@ def train_epoch(model, train_iter, optimizer, loss_fn, scheduler, warmup=False):
     loss.backward()
 
     optimizer.step()
-    if not warmup:
+    if not warmup and scheduler != None:
         scheduler.step()
 
     losses += loss.item()
@@ -241,7 +241,8 @@ def main():
 
     optimizer = torch.optim.AdamW(transformer.parameters(), lr=LEARN_RATE, weight_decay=0.5)
     loss_fn = nn.CrossEntropyLoss(ignore_index=PAD_IDX)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.9999)
+    #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.9999)
+    scheduler = None
     
     load_flag, transformer, optimizer = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
     if not load_flag:    
