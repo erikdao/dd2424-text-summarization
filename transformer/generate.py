@@ -12,7 +12,8 @@ SAVED_MODEL_FILE = '/Users/pacmac/Documents/GitHub/KTH_Projects/dd2424-text-summ
 HEADS = 10 # default = 8
 N = 6 # default = 6
 DIMFORWARD = 512
-BATCH_SIZE = 1
+BATCH_SIZE = 5
+TEST = False
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 PAD_IDX = 0
@@ -82,12 +83,13 @@ def main():
 
     start = 327200+40900 
     end = len(inputs)
-    choices = list(np.random.choice(np.arange(start,end), size=BATCH_SIZE, replace=False))
-    inputs_choice = map(inputs.__getitem__, choices)
-    labels_choice = map(labels.__getitem__, choices)
-    #mappings_test = {'inputs': inputs[start:start+2*BATCH_SIZE], 'labels': labels[start:start +2*BATCH_SIZE]}
-    mappings_test = {'inputs': inputs_choice, 'labels': labels_choice}
-
+    if not TEST:
+        choices = list(np.random.choice(np.arange(start,end), size=BATCH_SIZE, replace=False))
+        inputs_choice = map(inputs.__getitem__, choices)
+        labels_choice = map(labels.__getitem__, choices)
+        mappings_test = {'inputs': inputs_choice, 'labels': labels_choice}
+    else:
+        mappings_test = {'inputs': inputs[start:start+2*BATCH_SIZE], 'labels': labels[start:start +2*BATCH_SIZE]}
     #mappings_test = {'inputs': inputs[327200+40900:327200+2*40900], 'lab    els': labels[327200+40900:327200+2*40900]}
     print("Loading test loader...")
 
