@@ -109,7 +109,7 @@ def accuracy(logits, tgt_input):
     batch_accuracy = float(equals_per_batch / lens_per_batch)
     return batch_accuracy
 
-def train_epoch(model, train_iter, optimizer, loss_fn):
+def train_epoch(model, train_iter, optimizer, loss_fn, scheduler):
   model.train()
   losses = 0
   accs = 0
@@ -130,6 +130,7 @@ def train_epoch(model, train_iter, optimizer, loss_fn):
     loss.backward()
 
     optimizer.step()
+    scheduler.step()
 
     losses += loss.item()
     accs += accuracy(logits, tgt_input)
@@ -220,7 +221,12 @@ def main():
     transformer = transformer.to(DEVICE)
     optimizer = torch.optim.Adam(transformer.parameters(), lr=LEARN_RATE, betas=(0.9, 0.98), eps=1e-9) # TODO tune params
     loss_fn = nn.CrossEntropyLoss(ignore_index=PAD_IDX)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
+    #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
+    sched = torch.optim.lr_scheduler.CyclicLR(
+        optimizer=optimizer, 
+        base_lr=1e-5,
+        max_lr = 1e-3
+    )
     
     load_flag, transformer, optimizer = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
     if not load_flag:    
@@ -246,7 +252,7 @@ def main():
         start_time = time.time()
         ######### TRAIN ###########
         avg_train_loss, avg_train_acc = \
-            train_epoch(transformer, train_loader, optimizer, loss_fn)
+            train_epoch(transformer, train_loader, optimizer, loss_fn,sched)
         train_loss_per_epoch.append(avg_train_loss)
         train_acc_per_epoch.append(avg_train_acc)
         ######### VAL #############

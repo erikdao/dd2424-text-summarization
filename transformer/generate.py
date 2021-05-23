@@ -151,5 +151,4 @@ def main():
     end_time = time.time()
         
 if __name__ == '__main__':
-    np.random.seed(420)
     main()
