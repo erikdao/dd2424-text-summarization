@@ -3,6 +3,7 @@ from dataload.dataloader import *
 import time
 from tqdm import tqdm
 import json
+import pytorch_warmup as warmup
 
 from utils.glove_embedding import *
 from transformer.transformer_model import *
@@ -109,7 +110,7 @@ def accuracy(logits, tgt_input):
     batch_accuracy = float(equals_per_batch / lens_per_batch)
     return batch_accuracy
 
-def train_epoch(model, train_iter, optimizer, loss_fn, scheduler):
+def train_epoch(model, train_iter, optimizer, loss_fn, scheduler, wup_sched):
   model.train()
   losses = 0
   accs = 0
@@ -131,6 +132,8 @@ def train_epoch(model, train_iter, optimizer, loss_fn, scheduler):
 
     optimizer.step()
     scheduler.step()
+    wup_sched.dampen()
+
 
     losses += loss.item()
     accs += accuracy(logits, tgt_input)
@@ -227,6 +230,7 @@ def main():
         base_lr=1e-5,
         max_lr = 1e-3
     )
+    warmup_scheduler = warmup.UntunedLinearWarmup(optimizer)
     
     load_flag, transformer, optimizer = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
     if not load_flag:    
@@ -251,8 +255,14 @@ def main():
     for epoch in tqdm(range(EPOCHS)):
         start_time = time.time()
         ######### TRAIN ###########
-        avg_train_loss, avg_train_acc = \
-            train_epoch(transformer, train_loader, optimizer, loss_fn,sched)
+        avg_train_loss, avg_train_acc = train_epoch(
+            transformer, 
+            train_loader, 
+            optimizer, 
+            loss_fn,
+            sched,
+            warmup_scheduler
+        )
         train_loss_per_epoch.append(avg_train_loss)
         train_acc_per_epoch.append(avg_train_acc)
         ######### VAL #############
