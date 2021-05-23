@@ -16,8 +16,8 @@ EPOCHS = 16
 HEADS = 10 # default = 8 have to be dividable by d_model
 N = 6 # default = 6
 DIMFORWARD = 512
-LEARN_RATE = 0.0001
-BATCH_SIZE = 50
+LEARN_RATE = 0.006
+BATCH_SIZE = 60
 TEST = False
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -110,11 +110,19 @@ def accuracy(logits, tgt_input):
     batch_accuracy = float(equals_per_batch / lens_per_batch)
     return batch_accuracy
 
-def train_epoch(model, train_iter, optimizer, loss_fn, scheduler, wup_sched):
+def train_epoch(model, train_iter, optimizer, loss_fn, scheduler, warmup=False):
   model.train()
   losses = 0
   accs = 0
   for idx, data in tqdm(enumerate(train_iter)):
+    # TODO: remooove hardcore
+    if warmup and idx < 5000:
+        new_lr = sched_exp(LEARN_RATE, idx+1, 5000)
+        set_lr(optimizer, new_lr)
+
+    elif warmup and idx >= 5000:
+        warmup = False
+
     optimizer.zero_grad()
 
     src = data['input'].transpose(0, 1).to(DEVICE)
@@ -131,13 +139,12 @@ def train_epoch(model, train_iter, optimizer, loss_fn, scheduler, wup_sched):
     loss.backward()
 
     optimizer.step()
-    scheduler.step()
-    wup_sched.dampen()
-
+    if not warmup:
+        scheduler.step()
 
     losses += loss.item()
     accs += accuracy(logits, tgt_input)
-  return losses / len(train_iter), accs / len(train_iter)
+  return losses / len(train_iter), accs / len(train_iter), warmup
 
 def evaluate(model, val_iter, loss_fn):
   model.eval()
@@ -157,6 +164,14 @@ def evaluate(model, val_iter, loss_fn):
     losses += loss.item()
     accs += accuracy(logits, tgt_input)
   return losses / len(val_iter), accs / len(val_iter) 
+
+def set_lr(optimizer, lr):
+    for pg in optimizer.param_groups:
+        pg["lr"] = lr
+
+def sched_exp(end_lr, it, maxit):
+    #return start * (end / start) ** pos
+    return it * end_lr / maxit
 
 def main():
     torch.use_deterministic_algorithms(False)
@@ -222,16 +237,11 @@ def main():
         embeddings=embeddings
     )
     transformer = transformer.to(DEVICE)
-    optimizer = torch.optim.Adam(transformer.parameters(), lr=LEARN_RATE, betas=(0.9, 0.98), eps=1e-9) # TODO tune params
+    #optimizer = torch.optim.Adam(transformer.parameters(), lr=LEARN_RATE, betas=(0.9, 0.98), eps=1e-9) # TODO tune params
+
+    optimizer = torch.optim.AdamW(transformer.parameters(), lr=LEARN_RATE, weight_decay=0.5)
     loss_fn = nn.CrossEntropyLoss(ignore_index=PAD_IDX)
-    #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
-    sched = torch.optim.lr_scheduler.CyclicLR(
-        optimizer=optimizer, 
-        base_lr=1e-5,
-        max_lr = 1e-3,
-        cycle_momentum=False
-    )
-    warmup_scheduler = warmup.UntunedLinearWarmup(optimizer)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.9999)
     
     load_flag, transformer, optimizer = load_checkpoint(transformer, optimizer, filename=SAVED_MODEL_FILE)
     if not load_flag:    
@@ -253,16 +263,17 @@ def main():
     print("model init completed...")
     
     print("start training...")
+    warmup = True
     for epoch in tqdm(range(EPOCHS)):
         start_time = time.time()
         ######### TRAIN ###########
-        avg_train_loss, avg_train_acc = train_epoch(
+        avg_train_loss, avg_train_acc, warmup = train_epoch(
             transformer, 
             train_loader, 
             optimizer, 
             loss_fn,
             sched,
-            warmup_scheduler
+            warmup
         )
         train_loss_per_epoch.append(avg_train_loss)
         train_acc_per_epoch.append(avg_train_acc)
