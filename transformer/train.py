@@ -272,7 +272,7 @@ def main():
             train_loader, 
             optimizer, 
             loss_fn,
-            sched,
+            scheduler,
             warmup
         )
         train_loss_per_epoch.append(avg_train_loss)
