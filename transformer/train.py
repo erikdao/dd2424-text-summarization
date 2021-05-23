@@ -228,7 +228,8 @@ def main():
     sched = torch.optim.lr_scheduler.CyclicLR(
         optimizer=optimizer, 
         base_lr=1e-5,
-        max_lr = 1e-3
+        max_lr = 1e-3,
+        cycle_momentum=False
     )
     warmup_scheduler = warmup.UntunedLinearWarmup(optimizer)
     
