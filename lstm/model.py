@@ -109,11 +109,11 @@ class LSTMSummary(pl.LightningModule):
 
         # Initialize weights:
         for name, params in self.named_parameters():
-            if "embedding" in name:
-                # Don't initialize the weights of the embedding layer here
-                # as they'll be initialized from the pretrained glove
-                params.requires_grad = False
-                params.data.copy_(torch.from_numpy(self.embeddings))
+            # if "embedding" in name:
+            #     # Don't initialize the weights of the embedding layer here
+            #     # as they'll be initialized from the pretrained glove
+            #     params.requires_grad = False
+            #     params.data.copy_(torch.from_numpy(self.embeddings))
             if "bias" in name:
                 torch.nn.init.constant_(params, 0.0)
             if "weight" in name:

@@ -13,8 +13,8 @@ from utils.pickle import *
 
 current_dir = os.getcwd()
 print('current_dir', current_dir)
-CSV_FILE = '../data/amazon-product-reviews/Reviews.csv'
-EMBEDDING_FILE = '../data/glove6B/glove.6B.50d.txt'
+CSV_FILE = '/home/erik/Projects/KTH/dd2424-text-summarization/data/amazon-product-reviews/reviews-clean.csv'
+EMBEDDING_FILE = '/home/erik/Projects/KTH/dd2424-text-summarization/data/glove6B/glove.6B.50d.txt'
 #WORD2INDEX_FILE = 'w2i.pickle'
 #TOKENIZED_DATA_FILE = 'tokenized.pickle'
 
@@ -70,8 +70,8 @@ def tokenize_data(inputs, labels, word2index):
 def main():
     print("Loading data...")
     data = pd.read_csv(CSV_FILE)
-    inputs = data['Text'].values
-    labels = data['Summary'].values
+    inputs = data['text'].values
+    labels = data['summary'].values
     n_points = len(inputs)
     
     # build indexing
@@ -84,7 +84,7 @@ def main():
     #print("w2i: ",word2index)
 
     print("Saving word2index to file...")
-    pickle_save("./word2index", word2index)
+    pickle_save("./word2index_cleaned", word2index)
 
     print("Process inputs to reasonable tokens...")
     mappings, n_valid_points = tokenize_data(inputs,labels, word2index)
@@ -93,7 +93,7 @@ def main():
     #print("maps: ",mappings)
     
     print("Saving token to index mapping to file...")
-    pickle_save("./tokenized", mappings)
+    pickle_save("./tokenized_cleaned", mappings)
 
 if __name__ == '__main__':
     main()

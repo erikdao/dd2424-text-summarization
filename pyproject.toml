@@ -24,6 +24,7 @@ guildai = "^0.7.3"
 torchtext = "^0.9.1"
 beautifulsoup4 = "^4.9.3"
 lxml = "^4.6.3"
+nltk = "^3.6.2"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.0"
